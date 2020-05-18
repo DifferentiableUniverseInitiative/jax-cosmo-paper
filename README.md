@@ -9,10 +9,10 @@ Here is the current main scope and aims of the project:
  - Introduce the `jax-cosmo` library
  - Demonstrate to the cosmology community why differentiability is good with a few
  examples on a standard setting (e.g. DES Y1). Here are a few possibilities:
-  - Forecast demo
-  - Linear data compression demo a la MOPED
-  - Survey optimization
-  - Fast inference with VI or HMC
+   - Forecast demo
+   - Linear data compression demo a la MOPED
+   - Survey optimization
+   - Fast inference with VI or HMC
 
 But we will generally leave actual science investigations out of this paper, these
 can be explored in independent papers, outside of the scope of the Initiative or the 
