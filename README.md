@@ -29,9 +29,7 @@ Here are the proposed authorship guidelines for this paper:
  - We will separate two tiers in authors:
     - *First tier*: for people actively writing the paper and/or contributing to the code and demos.
     - *Second tier*: for people helping with feedback, ideas, etc.  
-
-  Typically first tier will mean at least writing a section of the paper, adding
-  a functionality to the code, or making a plot for the paper.
+   Typically first tier will mean at least writing a section of the paper, adding a functionality to the code, or making a plot for the paper.
 
  - First tier authors will appear sorted by amount of contribution, as first evaluated
  as fairly as possible by the instigator of the project (i.e. in this case [@EiffL](https://github.com/EiffL)) and after consensus of first tier authors. Second tier will be ranked alphabetically.
