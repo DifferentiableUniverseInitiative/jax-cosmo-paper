@@ -111,7 +111,8 @@ class HMC:
             # print out energy levels
             T = 0.5 * (p @ p)
             H = T + U
-            print(f'U={U:.3f}   T={T:.3f}   H={H:.3f}')
+            dH = H - H0
+            # print(f'U={U:.3f}   T={T:.3f}   H={H:.3f}   ΔH={dH:.3f}')
             # record a trace of the log_post, -U
             self.paths_logP.append(-U)
             # and the chain position
@@ -198,10 +199,10 @@ class HMC:
             if accept:
                 self.n_accept += 1
                 q = q_new
-                print(f"Accept {j} alpha={alpha:.2f}  p={p1:.2f}")
+                print(f"Accept {j} alpha={alpha:.2f}  p={p1:.2f}  ΔH={deltaH:.3f}")
             else:
                 self.n_reject += 1
-                print(f"Reject {j} alpha={alpha:.2f}  p={p1:.2f}")
+                print(f"Reject {j} alpha={alpha:.2f}  p={p1:.2f}  Δh={deltaH:.3f}")
             # keep a trace of things
             x = self.q2x(q)
             self.trace.append(x)
