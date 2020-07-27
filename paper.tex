@@ -37,9 +37,10 @@
 
 %% The amssymb package provides various useful mathematical symbols
 \usepackage{amssymb}
+\usepackage{amsmath}
 %% The amsthm package provides extended theorem environments
 %% \usepackage{amsthm}
-
+\usepackage{aas_macros}
 %% The lineno packages adds line numbers. Start line numbering with
 %% \begin{linenumbers}, end it with \end{linenumbers}. Or switch it on
 %% for the whole article with \linenumbers.
@@ -135,6 +136,60 @@ With jax-cosmo, Fisher forecasts are accurate and instantaneous, inference is li
 
 \subsection{Massive Optimal Compression in 3 Lines}
 
+\subsection{Efficient sampling in high dimensions with Hamiltonian Monte Carlo}
+
+Hamiltonian Monte Carlo (HMC) is an MCMC-type method particularly suited to drawing
+samples from high dimensional parameter spaces.  It was introduced in \citet{duane}
+and developed extensively since.  See \citep{betancourt} for a full review; we describe
+very basic features here.
+
+HMC samples spaces by generating particle tracjectories through the space, using the log-posterior
+as the negative potential energy of a particle at each point $p$ in the space.  At each sample a trajectory are initialized
+with a random velocity $q$, and then integrated using Hamilton's equations with a numerical integration:
+\begin{align}
+\frac{\mathrm{d}p}{\mathrm{d}t} &= - \frac{\partial V}{\mathrm{d} q} = \frac{\partial {\cal P}}{\mathrm{d} q}\\
+\frac{\mathrm{d}q}{\mathrm{d}t} &= + \frac{\partial U}{\mathrm{d} p} = M^{-1} p
+\end{align}
+where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also
+used to set the scale of the random initial velocities.
+
+Formally, the set of $n_\mathrm{dim}$ moment are treated as new parameters, and after 
+some number of integration steps a final point in the trajectory is compared to the initial one,
+and a Metropolis-Hastings acceptance criterion on the total energy $p^T M^{-1} p + {\cal}P(q)$ is applied.
+If the trajectory is perfectly simulation then this acceptance is unity, since energy is conserved; applying it allows
+a relaxation to the integration accuracy.
+
+That gradients $\frac{\partial {\cal P}}{\mathrm{d} q}$ can be estimated using finite differencing,
+but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluations per point, greatly slowing it
+in high dimension, and as with the Fisher forecasting is highly prone to numerical error. Automatically
+calculating a Hessian, as in JAX-Cosmo, makes it feasible and efficient.
+
+Below we show an example set of HMC constraints using JAX-Cosmo to constrain a simulated
+Dark Energy Survey Year 1 (DES-Y1) lensing and clustering-like (3x2pt) likelihood, using 21 parameters\footnote{We omit the 
+five clustering sample photometric redshift parameters}.  We re-parametrize the space to unit mass using the Cholesky 
+decomposition,
+of the covariance as estimated with an initial Fisher matrix; this lets us reflect the trajectories when they reach the
+edge of the parameter space, as recommended in \citet{afshar}.  We use a fixed number (25) of integration steps and 
+a fixed integration period (0.02), this was chosen heuristically to give a reasonable acceptance rate, but is likely to be
+far from optimal.  We compare to the highly-optimized \emph{Cobaya} 
+Metropolis-Hastings implementation \citep{cobaya1,cobaya2}, initializing it with the Fisher matrix as a proposal and
+tuning thereafter.
+
+The Hamiltonian sampler required about half the number of samples as the Metropolis to reach approximately the same
+convergence, as tested by the Gelman-Rubin test \citep{gelman}, though each sample was itself a few times slower
+on a CPU.  This proof-of-principle example can certainly be hugely improved using various extensions to HMC such as No U-Turn Sampling \citep{nuts} or sampling from the entire trajectories \cite{betancourt}.  On next generation GPU high-performance systems, the advantage will be large.
+
+\begin{figure}
+\includegraphics[width=0.95\columnwidth]{figures/hmc.pdf}
+\caption{Constraints on three of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using a simple Hamiltonian
+Monte Carlo sampler with JAX-Cosmo (blue), compared to the Cobaya Metropolis-Hastings sampler (orange).}
+\end{figure}
+
+
+We note that a full Boltzmann code accurate enough to calculate the CMB spectra to Planck \citep{planck18}
+or future \citep{s4,simons} accuracy is currently beyond the scope of this project.  
+If this is needed then HMC could use a fast approximation to a CMB theory spectrum, and importance sampling applied to the complete chain.
+
 
 \subsection{Lightning fast inference with BayesFast}
 
@@ -149,20 +204,13 @@ With jax-cosmo, Fisher forecasts are accurate and instantaneous, inference is li
 %% If you have bibdatabase file and want bibtex to generate the
 %% bibitems, please use
 %%
-%%  \bibliographystyle{elsarticle-harv} 
-%%  \bibliography{<your bibdatabase>}
+\section*{Bibliography}
+\bibliographystyle{elsarticle-harv} 
+\bibliography{refs}
 
 %% else use the following coding to input the bibitems directly in the
 %% TeX file.
 
-\begin{thebibliography}{00}
-
-%% \bibitem[Author(year)]{label}
-%% Text of bibliographic item
-
-\bibitem[ ()]{}
-
-\end{thebibliography}
 \end{document}
 
 \endinput
