@@ -119,7 +119,7 @@ def theory_cov(p, nzs_s, nzs_l, ell):
     cosmo, probes = theory_components(nzs_s, nzs_l, p)
     cl_signal = jc.angular_cl.angular_cl(cosmo, ell, probes)
     cl_noise = jc.angular_cl.noise_cl(ell, probes)
-    cov = jc.angular_cl.gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25)
+    cov = jc.angular_cl.gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25, sparse=False)
     return cov
 
 
