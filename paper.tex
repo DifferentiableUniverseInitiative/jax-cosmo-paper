@@ -48,6 +48,13 @@
 
 \journal{Astronomy and Computing}
 
+
+%%%% new command (JEC)
+\newcommand{\nn}{\nonumber}
+\newcommand{\numpyro}{\texttt{NumPyro}}
+\newcommand{\bydef}{\overset{def.}{\equiv}}
+
+
 \begin{document}
 
 \begin{frontmatter}
@@ -193,7 +200,65 @@ If this is needed then HMC could use a fast approximation to a CMB theory spectr
 
 \subsection{Lightning fast inference with BayesFast}
 
+%
+\subsection{Use of SVI \& Neutral Reparametrisation for NUTS}
+%
+Let us remind briefly what is the \textit{Stochastic Variational Inference} method \citep{2012arXiv1206.7051H, 2017arXiv171105597Z} and show where auto-differentiation helps. If one  writes $p(z)$ the prior, $p(\mathcal{D}|z)$ the likelihood and $p(\mathcal{D})$ the marginal likelihood, then thanks to the  Bayes theorem one gets $p(z|\mathcal{D})=p(z)p(\mathcal{D}|z)/p(\mathcal{D})$ the posterior distribution of a model with latent variables $z$ and a set of observations $\mathcal{D}$. The SVI aims to get an approximation of this distribution, ie. $p(z|\mathcal{D}) \approx q(z;\lambda)$, by determining the variational parameters $\lambda$ of a predefined distribution. To do so, one uses the Kullback-Leibler divergence of the two distributions $KL(q(z;\lambda)||p(z|\mathcal{D}))$ leading to the following relation
+\begin{align}
+\log p(\mathcal{D}) &= \mathtt{ELBO} +  KL(q(z;\lambda)||p(z|\mathcal{D})) \label{eq-ELBO} \\
+\mathrm{with} \ \mathtt{ELBO} &\equiv -\mathbb{E}_{q(z;\lambda)}\left[ \log q(z;\lambda)\right] + \mathbb{E}_{q(z;\lambda)}\left[ \log p(z,\mathcal{D}) \right] 
+\end{align}
+which defines the evidence lower bound (ELBO) that one tends to maximize to get the $\lambda$ values and the  highest lower bound on the logarithm of the marginal probability of the observations $\log p(\mathcal{D})$. So, the optimal variational distribution satisfies
+\begin{equation}
+q(z;\lambda^\ast) = \underset{q(z;\lambda)}{\mathrm{argmax}}\  \mathtt{ELBO} = 
+\underset{\lambda}{\mathrm{argmin}}\ \mathcal{L}(\lambda)
+\end{equation}
+The function $\mathcal{L}(\lambda)$ is the cost function used in practice. It is composed of two parts:
+\begin{equation}
+\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{q(z;\lambda)}\left[ \log q(z;\lambda)\right]}_{guide} - \underbrace{\mathbb{E}_{q(z;\lambda)}\left[ \log p(z,\mathcal{D}) \right]}_{model}
+\label{eq-loss-svi-1}
+\end{equation}
+where the \textit{guide}, in the \numpyro\ word, may be a multi-variate gaussian distribution (MVN) for instance. 
 
+Using the auto-differentation tool, one can use "black-box" guides (aka \textit{automatic differentiation variational inference}). As stated by the authors of \citep{2016arXiv160300788K} ADVI helps specifying a variational family appropriate to the model, computing the corresponding objective
+function, taking derivatives, and running a gradient-based or coordinate-ascent optimization. First is defined a bijective differentiable transformation $T$ of the original latent variables $z$ into new variables $\xi$, such $\xi=T(z)$ and $z=T^{-1}(\xi)$. One can develop "AutoGuides" (\numpyro\ terminology) that can be adapted to the user models. Then, the cost function reads
+\begin{equation}
+\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{q(\xi;\lambda)}\left[ \log q(\xi;\lambda)\right]}_{guide} - \underbrace{\mathbb{E}_{q(\xi;\lambda)}\left[ \log p(\xi,\mathcal{D}) \right]}_{model}
+\label{eq-loss-svi-2}
+\end{equation}
+with
+\begin{equation}
+p(\xi,\mathcal{D}) \bydef p(T^{-1}(\xi),\mathcal{D}) |J_{T^{-1}}(\xi)|
+\end{equation}
+which exhibit the Jacobian of the $T^{-1}$ transformation. The main advantage of this reparametrisation is that the minimization can be performed with no bound constraints. 
+
+Now, one is faced with the evaluation of the expectations during gradient descent. The solution is to use what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \citep{2015arXiv150603431K}). Let us illustrate the trick in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ ($\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobien of this distribution is 1, so the cost function reads
+\begin{multline}
+-\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\eta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
+\label{eq-loss-svi-3}
+\end{multline}
+where $\mathbb{H}(q)$ is the Shannon entropy of the gaussian distribution which is independent of the model, so its gradient can be computed once for all and reused in user model. Then,
+to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the expectation which leads to
+\begin{multline}
+-\nabla_\lambda\mathcal{L}(\lambda) = \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
+\left[ \nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)] \right. \right. \\
++ \left. \left. \nabla_\xi \log|J_{T^{-1}}(\xi)| \right] \times \nabla_\lambda S_\lambda^{-1}(\zeta)
+\right\}
++ \nabla_\lambda \mathbb{H}[q(\xi;\lambda)]
+\label{eq-loss-svi-4}
+\end{multline}
+For the use case of the MVN (auto)guide, one gets
+\begin{align}
+-\nabla_\mu \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
+\nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)]
++ \nabla_\xi \log|J_{T^{-1}}(\xi)|
+\right\} \nn \\
+-\nabla_L \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
+\left[ \nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)] \right.\right. \nn\\
+&\left. \left. \qquad\qquad\qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right] \times \xi^T 
+\right\}+ (L^{-1})^T
+\end{align}
+Reminding that $z=T^{-1}(\xi)$ and $\xi=S^{-1}(\zeta)$, the expectation used in the above expression is computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$.
 %% The Appendices part is started with the command \appendix;
 %% appendix sections are then done as normal sections
 %% \appendix
