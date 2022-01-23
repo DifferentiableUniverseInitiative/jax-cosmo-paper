@@ -202,8 +202,9 @@ If this is needed then HMC could use a fast approximation to a CMB theory spectr
 
 %
 \subsection{Use of SVI \& Neutral Reparametrisation for NUTS}
+\subsubsection{Brief introduction on the methods}
 %
-Let us remind briefly what is the \textit{Stochastic Variational Inference} method \citep{2012arXiv1206.7051H, 2017arXiv171105597Z} and show where auto-differentiation helps. If one  writes $p(z)$ the prior, $p(\mathcal{D}|z)$ the likelihood and $p(\mathcal{D})$ the marginal likelihood, then thanks to the  Bayes theorem one gets $p(z|\mathcal{D})=p(z)p(\mathcal{D}|z)/p(\mathcal{D})$ the posterior distribution of a model with latent variables $z$ and a set of observations $\mathcal{D}$. The SVI aims to get an approximation of this distribution, ie. $p(z|\mathcal{D}) \approx q(z;\lambda)$, by determining the variational parameters $\lambda$ of a predefined distribution. To do so, one uses the Kullback-Leibler divergence of the two distributions $KL(q(z;\lambda)||p(z|\mathcal{D}))$ leading to the following relation
+Let us remind briefly what is the \textit{Stochastic Variational Inference} method \citep{2012arXiv1206.7051H, 2017arXiv171105597Z} and show where auto-differentiation helps. If one  writes $p(z)$ the prior, $p(\mathcal{D}|z)$ the likelihood and $p(\mathcal{D})$ the marginal likelihood, then thanks to the  Bayes theorem one gets $p(z|\mathcal{D})=p(z)p(\mathcal{D}|z)/p(\mathcal{D})$ the posterior distribution of a model with latent variables $z$ and a set of observations $\mathcal{D}$. The VI aims to get an approximation of this distribution, ie. $p(z|\mathcal{D}) \approx q(z;\lambda)$, by determining the variational parameters $\lambda$ of a predefined distribution. To do so, one uses the Kullback-Leibler divergence of the two distributions $KL(q(z;\lambda)||p(z|\mathcal{D}))$ leading to the following relation
 \begin{align}
 \log p(\mathcal{D}) &= \mathtt{ELBO} +  KL(q(z;\lambda)||p(z|\mathcal{D})) \label{eq-ELBO} \\
 \mathrm{with} \ \mathtt{ELBO} &\equiv -\mathbb{E}_{q(z;\lambda)}\left[ \log q(z;\lambda)\right] + \mathbb{E}_{q(z;\lambda)}\left[ \log p(z,\mathcal{D}) \right] 
@@ -258,7 +259,35 @@ For the use case of the MVN (auto)guide, one gets
 &\left. \left. \qquad\qquad\qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right] \times \xi^T 
 \right\}+ (L^{-1})^T
 \end{align}
-Reminding that $z=T^{-1}(\xi)$ and $\xi=S^{-1}(\zeta)$, the expectation used in the above expression is computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$.
+The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the "S" of SVI.
+
+If the SVI method can be used as is to get $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution, the \textit{Neural Transport MCMC} method \citep{2014arXiv1412.5492P,2019arXiv190303704H} is an efficient way to boost HMC efficiency, especially in target distribution unfavourable geometry where for instance the leapfrog integration algorithm has to face squeezed join distributions for a subset of variables. From SVI, one obtains a first approximation of the target distribution and we show that the change-of-variable $z=F_\lambda(\zeta)$ is such that
+\begin{equation}
+q(z;\lambda) \rightarrow q(\zeta;\lambda) \bydef q(F_\lambda(\zeta)) |J_{F_\lambda}(\zeta)|
+\end{equation}
+which is evaluated with optimal $\lambda^\ast$ according to maximization of the ELBO (eg. $F_\lambda=T^{-1}\circ S^{-1}_\lambda$). So, one can use a HMC sampler (eg. NUTS) based on $p(\zeta;\mathcal{D})$ distribution, initialized with $\zeta$ samples from $q(\zeta;\lambda^\ast)$, to get a Markov Chain of $N$ samples $(\zeta_i)_{i<N}$. Then, from the transformation  $z_i=F_{\lambda^\ast}(\zeta_i)$ one finally obtain a Marcov Chain with $(z_i)_{i<N}$ samples. The method is accessible throw the \verb|NeuTraReparam| in \numpyro\ library.
+%
+\subsubsection{Example}
+%
+\begin{figure}
+\includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x200.pdf}
+\caption{Constraints on 4 of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, in blue the NUTS sampling described in..., and in orange a SVI MVN optimisation followed by a Naural Transport parametrisation to run a NUTS sampling (1 chain of 200 warm followed by 200 samples; a dense mass matrix and \texttt{max\_tree\_depth} parameter set to 5).}
+\label{fig_svi_nuts_1}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x1000.pdf}
+\caption{Same as Fig.~\ref{fig_svi_nuts_1} but with 1 chain of 200 warm followed by 1000 samples for the NUTS sampler after SVI optimization.}
+\label{fig_svi_nuts_2}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figures/SVI_NUTS_10x200x1000.pdf}
+\caption{Same as Fig.~\ref{fig_svi_nuts_1} but with 10 chains of 200 warm followed by 1000 samples for the NUTS sampler after SVI optimization.}
+\label{fig_svi_nuts_3}
+\end{figure}
+
+
 %% The Appendices part is started with the command \appendix;
 %% appendix sections are then done as normal sections
 %% \appendix
