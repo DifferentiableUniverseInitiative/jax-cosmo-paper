@@ -36,6 +36,7 @@
 %% please give \usepackage{epsfig}
 
 %% The amssymb package provides various useful mathematical symbols
+\usepackage{minted}
 \usepackage{amssymb}
 \usepackage{amsmath}
 %% The amsthm package provides extended theorem environments
@@ -124,24 +125,77 @@ With jax-cosmo, Fisher forecasts are accurate and instantaneous, inference is li
 \section{Introduction}
 
 
-
-\section{JAX: Autograd meets XLA}
-
+% \section{JAX: Autograd meets XLA}
 
 \section{Architecture}
+% Explain how the code is structured, mention some tricks of autodiff if we have some
+% Follows a bit the structure of the CCL library
 
-
-\section{Validation against the Core Cosmology Library (CCL)} 
+\subsection{Validation against the Core Cosmology Library (CCL)} 
 
 \section{Example of applications}
+% illustrates why autodiff is interesting from several points of view
+
+\subsection{DES Y1 setting}
+% Here we describe the data and 3x2pt model for DES Y1 
 
 \subsection{Instantaneous Fisher Forecasts}
 
+\begin{minted}{python}
+def likelihood(cosmo):
+  # Compute mean and covariance of angular Cls, 
+  # for specific probes
+  mu, cov = gaussian_cl_covariance_and_mean(cosmo, 
+                    ell, probes)
+  # Return likelihood value
+  return gaussian_log_likelihood(data, mu, cov)
+
+# Compute derivatives of the likelihood with 
+# respect to cosmological parameters
+g = jax.grad(likelihood)(cosmo)
+
+# Compute Fisher matrix of cosmological 
+# parameters
+F = - jax.hessian(likelihood)(cosmo)
+\end{minted}
+
+% Plot showing error in Jacobian computation by finite diff
+
+% Plot showing error on some parameters
 
 \subsection{Survey Optimization by FoM Maximization}
-
+% Needs to mention the tomo challenge, mention that we can backpropagate through a NN and the cosmology model
+% Maybe this can be only mentioned in the discussion.
 
 \subsection{Massive Optimal Compression in 3 Lines}
+
+% Here we can implement MOPED for the compression of 
+
+\section{Gradient-based fast cosmological inference}
+
+
+\subsection{Variationnal Inference}
+
+
+\subsection{Hamiltonian Monte Carlo}
+
+\subsubsection{Introduction}
+
+% Show Joe's vanilla HMC results against Cobaya
+
+\subsubsection{NUTS}
+
+% Show the advantage of using NUTS 
+% look at difference in efficiency in terms of how many times we need to call the model.
+
+\subsubsection{Neural Reparametrisation}
+
+
+\subsection{Discussion}
+
+
+\section{Conclusion}
+
 
 \subsection{Efficient sampling in high dimensions with Hamiltonian Monte Carlo}
 
