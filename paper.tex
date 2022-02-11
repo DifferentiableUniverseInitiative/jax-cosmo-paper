@@ -42,10 +42,24 @@
 %% The amsthm package provides extended theorem environments
 %% \usepackage{amsthm}
 \usepackage{aas_macros}
+\usepackage{fontawesome}
 %% The lineno packages adds line numbers. Start line numbering with
 %% \begin{linenumbers}, end it with \end{linenumbers}. Or switch it on
 %% for the whole article with \linenumbers.
 %% \usepackage{lineno}
+
+\usepackage{xcolor}
+\definecolor{xlinkcolor}{cmyk}{1,1,0,0}
+\usepackage[colorlinks = true,
+            linkcolor = xlinkcolor,
+            urlcolor  = xlinkcolor,
+            citecolor = xlinkcolor,
+            anchorcolor = xlinkcolor]{hyperref}
+
+\newcommand{\nblink}[1]{\href{https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper/blob/master/notebooks/#1.ipynb}{\faFileCodeO}}
+\newcommand{\github}{\href{https://github.com/DifferentiableUniverseInitiative/jax\_cosmo}{\faGithub}}
+
+
 
 \journal{Astronomy and Computing}
 
@@ -92,7 +106,7 @@
 \address{}
 
 \begin{abstract}
-With jax-cosmo, Fisher forecasts are accurate and instantaneous, inference is lightning-fast, survey optimization is trivial.
+With jax-cosmo, Fisher forecasts are accurate and instantaneous, inference is lightning-fast, survey optimization is trivial. \github
 \end{abstract}
 
 %%Graphical abstract
@@ -127,17 +141,52 @@ With jax-cosmo, Fisher forecasts are accurate and instantaneous, inference is li
 
 % \section{JAX: Autograd meets XLA}
 
-\section{Architecture}
+\section{Modeling and implementation}
+
+In this section, we describe the cosmological modeling provided by jax-cosmo, and its implementation in JAX.
+
 % Explain how the code is structured, mention some tricks of autodiff if we have some
 % Follows a bit the structure of the CCL library
 
+\subsection{Background cosmology}
+% Usual stuff
+
+
+\subsection{Growth of perturbations}
+% The interesting point to mention here is the differentiable growth ODE
+
+
+\subsection{Matter power spectrum}
+% Here we describe the EH power spectrum, mention possible extensions with emulators
+
+
+\subsection{Tracers}
+% Here we describe the kernels, like in CCL
+
+
+\subsection{Angular power-spectra}
+% Limber integration, this can be an opportunity to talk about differentiation through integrals as well.
+
+
 \subsection{Validation against the Core Cosmology Library (CCL)} 
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/halofit_pk.png}
+    \caption{Comparison of matter power spectrum between CCL and jax-cosmo. \textbf{Example of validation plot} \href{https://github.com/DifferentiableUniverseInitiative/jax_cosmo/blob/master/docs/notebooks/CCL_comparison.ipynb}{\faFileCodeO}}
+    \label{fig:halofit_comparison}
+\end{figure}
+
+
 
 \section{Example of applications}
 % illustrates why autodiff is interesting from several points of view
 
 \subsection{DES Y1 setting}
 % Here we describe the data and 3x2pt model for DES Y1 
+ 
+In this section, we adopt as a setting a DES Y1 3x2pt-like analysis. 
+
 
 \subsection{Instantaneous Fisher Forecasts}
 
@@ -172,91 +221,10 @@ F = - jax.hessian(likelihood)(cosmo)
 % Here we can implement MOPED for the compression of 
 
 \section{Gradient-based fast cosmological inference}
-
-
-\subsection{Variationnal Inference}
-
-
-\subsection{Hamiltonian Monte Carlo}
-
-\subsubsection{Introduction}
-
-% Show Joe's vanilla HMC results against Cobaya
-
-\subsubsection{NUTS}
-
-% Show the advantage of using NUTS 
-% look at difference in efficiency in terms of how many times we need to call the model.
-
-\subsubsection{Neural Reparametrisation}
-
-
-\subsection{Discussion}
-
-
-\section{Conclusion}
-
-
-\subsection{Efficient sampling in high dimensions with Hamiltonian Monte Carlo}
-
-Hamiltonian Monte Carlo (HMC) is an MCMC-type method particularly suited to drawing
-samples from high dimensional parameter spaces.  It was introduced in \citep{1987PhLB..195..216D}
-and developed extensively since.  See \citet{betancourt} for a full review; we describe
-very basic features here.
-
-HMC samples spaces by generating particle tracjectories through the space, using the log-posterior
-as the negative potential energy of a particle at each point $q$ in the space.  At each sample a trajectory are initialized
-with a random momentum $p$, and then integrated using Hamilton's equations with a numerical integration:
-\begin{align}
-\frac{\mathrm{d}p}{\mathrm{d}t} &= - \frac{\partial V}{\mathrm{d} q} = \frac{\partial \log{\cal P}}{\mathrm{d} q}\\
-\frac{\mathrm{d}q}{\mathrm{d}t} &= + \frac{\partial U}{\mathrm{d} p} = M^{-1} p
-\end{align}
-where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also
-used to set the scale of the random initial velocities.
-
-Formally, the set of $n_\mathrm{dim}$ moment are treated as new parameters, and after 
-some number of integration steps a final point in the trajectory is compared to the initial one,
-and a Metropolis-Hastings acceptance criterion on the total energy $H = p^T M^{-1} p + \log{\cal P}(q)$ is applied.
-If the trajectory is perfectly simulation then this acceptance is unity, since energy is conserved; applying it allows
-a relaxation to the integration accuracy.
-
-That gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing,
-but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluations per point, greatly slowing it
-in high dimension, and as with the Fisher forecasting is highly prone to numerical error. Automatically
-calculating a Hessian, as in JAX-Cosmo, makes it feasible and efficient.
-
-Below we show an example set of HMC constraints using JAX-Cosmo to constrain a simulated
-Dark Energy Survey Year One (DES-Y1) lensing and clustering-like (3x2pt) likelihood, using 21 parameters\footnote{We omit the 
-five clustering sample photometric redshift parameters}.  We re-parametrize the space to unit mass using the Cholesky 
-decomposition
-of the covariance as estimated with an initial Fisher matrix; this lets us reflect the trajectories when they reach the
-edge of the parameter space, as recommended in \citep{NIPS2015_8303a79b}.  We use a fixed number (25) of integration steps and 
-a fixed integration period (0.02), this was chosen heuristically to give a reasonable acceptance rate, but is likely to be
-far from optimal.  We compare to the highly-optimized {\sc Cobaya} 
-Metropolis-Hastings implementation \citep{cobaya2,cobaya1}, initializing it with the Fisher matrix as a proposal and
-tuning thereafter.  We ran two processes for each sampler, with four CPU threads per process.
-
-The Hamiltonian sampler required around half the number of samples as the Metropolis (70,000 vs 140,000) to reach approximately the same
-convergence, as tested by the Gelman-Rubin test \citep{gelman}, though each sample was itself a few times slower
-on a CPU.  This proof-of-principle example can certainly be hugely improved using various extensions to HMC such as No U-Turn Sampling \citep{nuts} or sampling from the entire trajectories \cite{betancourt}.  On next generation GPU high-performance systems, the advantage will be large.
-
-\begin{figure}
-\includegraphics[width=0.95\columnwidth]{figures/hmc.pdf}
-\caption{Constraints on three of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using a simple Hamiltonian
-Monte Carlo sampler with JAX-Cosmo (blue), compared to the Cobaya Metropolis-Hastings sampler (orange).}
-\end{figure}
-
-
-We note that a full Boltzmann code accurate enough to calculate the CMB spectra to Planck \citep{planck18}
-or future \citep{s4,simons} accuracy is currently beyond the scope of this project.  
-If this is needed then HMC could use a fast approximation to a CMB theory spectrum, and importance sampling applied to the complete chain.
-
-
-\subsection{Lightning fast inference with BayesFast}
-
 %
-\subsection{Use of SVI \& Neutral Reparametrisation for NUTS}
-\subsubsection{Brief introduction on the methods}
+In the following sections we briefly review the statistical methods used to make some cosmological parameter inference. Namely we have used \textit{Stochastic Variational Inference} (aka SVI), \textit{Hybrid Hamiltonian Monte Carlo} (aka HMC), a variant of HMC knows as \textit{No-U-Turn} (aka NUTS), and finally the use of  \textit{Neutral Reparametrization}.   
+%
+\subsection{Stochastic Variational Inference}
 %
 Let us remind briefly what is the \textit{Stochastic Variational Inference} method \citep{2012arXiv1206.7051H, 2017arXiv171105597Z} and show where auto-differentiation helps. If one  writes $p(z)$ the prior, $p(\mathcal{D}|z)$ the likelihood and $p(\mathcal{D})$ the marginal likelihood, then thanks to the  Bayes theorem one gets $p(z|\mathcal{D})=p(z)p(\mathcal{D}|z)/p(\mathcal{D})$ the posterior distribution of a model with latent variables $z$ and a set of observations $\mathcal{D}$. The VI aims to get an approximation of this distribution, ie. $p(z|\mathcal{D}) \approx q(z;\lambda)$, by determining the variational parameters $\lambda$ of a predefined distribution. To do so, one uses the Kullback-Leibler divergence of the two distributions $KL(q(z;\lambda)||p(z|\mathcal{D}))$ leading to the following relation
 \begin{align}
@@ -315,11 +283,94 @@ For the use case of the MVN (auto)guide, one gets
 \end{align}
 The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the "S" of SVI.
 
+
+
+\subsection{Hamiltonian Monte Carlo}
+
+\subsubsection{Introduction}
+
+% Show Joe's vanilla HMC results against Cobaya
+Hamiltonian Monte Carlo (HMC) is an MCMC-type method particularly suited to drawing
+samples from high dimensional parameter spaces.  It was introduced in \citep{1987PhLB..195..216D}
+and developed extensively since.  See \citet{betancourt} for a full review; we describe
+very basic features here.
+
+HMC samples spaces by generating particle tracjectories through the space, using the log-posterior
+as the negative potential energy of a particle at each point $q$ in the space.  At each sample a trajectory are initialized
+with a random momentum $p$, and then integrated using Hamilton's equations with a numerical integration:
+\begin{align}
+\frac{\mathrm{d}p}{\mathrm{d}t} &= - \frac{\partial V}{\mathrm{d} q} = \frac{\partial \log{\cal P}}{\mathrm{d} q}\\
+\frac{\mathrm{d}q}{\mathrm{d}t} &= + \frac{\partial U}{\mathrm{d} p} = M^{-1} p
+\end{align}
+where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also
+used to set the scale of the random initial velocities.
+
+Formally, the set of $n_\mathrm{dim}$ moment are treated as new parameters, and after 
+some number of integration steps a final point in the trajectory is compared to the initial one,
+and a Metropolis-Hastings acceptance criterion on the total energy $H = p^T M^{-1} p + \log{\cal P}(q)$ is applied.
+If the trajectory is perfectly simulation then this acceptance is unity, since energy is conserved; applying it allows
+a relaxation to the integration accuracy.
+
+That gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing,
+but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluations per point, greatly slowing it
+in high dimension, and as with the Fisher forecasting is highly prone to numerical error. Automatically
+calculating a Hessian, as in JAX-Cosmo, makes it feasible and efficient.
+
+Below we show an example set of HMC constraints using JAX-Cosmo to constrain a simulated
+Dark Energy Survey Year One (DES-Y1) lensing and clustering-like (3x2pt) likelihood, using 21 parameters\footnote{We omit the 
+five clustering sample photometric redshift parameters}.  We re-parametrize the space to unit mass using the Cholesky 
+decomposition
+of the covariance as estimated with an initial Fisher matrix; this lets us reflect the trajectories when they reach the
+edge of the parameter space, as recommended in \citep{NIPS2015_8303a79b}.  We use a fixed number (25) of integration steps and 
+a fixed integration period (0.02), this was chosen heuristically to give a reasonable acceptance rate, but is likely to be
+far from optimal.  We compare to the highly-optimized {\sc Cobaya} 
+Metropolis-Hastings implementation \citep{cobaya2,cobaya1}, initializing it with the Fisher matrix as a proposal and
+tuning thereafter.  We ran two processes for each sampler, with four CPU threads per process.
+
+The Hamiltonian sampler required around half the number of samples as the Metropolis (70,000 vs 140,000) to reach approximately the same
+convergence, as tested by the Gelman-Rubin test \citep{gelman}, though each sample was itself a few times slower
+on a CPU.  This proof-of-principle example can certainly be hugely improved using various extensions to HMC such as No U-Turn Sampling \citep{nuts} or sampling from the entire trajectories \cite{betancourt}.  On next generation GPU high-performance systems, the advantage will be large.
+
+\begin{figure}
+\includegraphics[width=0.95\columnwidth]{figures/hmc.pdf}
+\caption{Constraints on three of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using a simple Hamiltonian
+Monte Carlo sampler with JAX-Cosmo (blue), compared to the Cobaya Metropolis-Hastings sampler (orange).}
+\end{figure}
+
+
+We note that a full Boltzmann code accurate enough to calculate the CMB spectra to Planck \citep{planck18}
+or future \citep{s4,simons} accuracy is currently beyond the scope of this project.  
+If this is needed then HMC could use a fast approximation to a CMB theory spectrum, and importance sampling applied to the complete chain.
+
+\subsubsection{NUTS}
+%
+% Show the advantage of using NUTS 
+% look at difference in efficiency in terms of how many times we need to call the model.
+
+A variant of the traditional HMC sampler has been introduced in reference \citep{nuts}.
+
+
+\subsubsection{Neural Reparametrisation}
 If the SVI method can be used as is to get $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution, the \textit{Neural Transport MCMC} method \citep{2014arXiv1412.5492P,2019arXiv190303704H} is an efficient way to boost HMC efficiency, especially in target distribution unfavourable geometry where for instance the leapfrog integration algorithm has to face squeezed join distributions for a subset of variables. From SVI, one obtains a first approximation of the target distribution and we show that the change-of-variable $z=F_\lambda(\zeta)$ is such that
 \begin{equation}
 q(z;\lambda) \rightarrow q(\zeta;\lambda) \bydef q(F_\lambda(\zeta)) |J_{F_\lambda}(\zeta)|
 \end{equation}
 which is evaluated with optimal $\lambda^\ast$ according to maximization of the ELBO (eg. $F_\lambda=T^{-1}\circ S^{-1}_\lambda$). So, one can use a HMC sampler (eg. NUTS) based on $p(\zeta;\mathcal{D})$ distribution, initialized with $\zeta$ samples from $q(\zeta;\lambda^\ast)$, to get a Markov Chain of $N$ samples $(\zeta_i)_{i<N}$. Then, from the transformation  $z_i=F_{\lambda^\ast}(\zeta_i)$ one finally obtain a Marcov Chain with $(z_i)_{i<N}$ samples. The method is accessible throw the \verb|NeuTraReparam| in \numpyro\ library.
+
+
+\subsection{Discussion}
+
+
+\section{Conclusion}
+
+
+\subsection{Efficient sampling in high dimensions with Hamiltonian Monte Carlo}
+
+
+
+\subsection{Lightning fast inference with BayesFast}
+
+%
 %
 \subsubsection{DES-Y1 Example}
 %
