@@ -341,11 +341,25 @@ or future \citep{s4,simons} accuracy is currently beyond the scope of this proje
 If this is needed then HMC could use a fast approximation to a CMB theory spectrum, and importance sampling applied to the complete chain.
 
 \subsubsection{NUTS}
+\label{sec-NUTS}
 %
 % Show the advantage of using NUTS 
 % look at difference in efficiency in terms of how many times we need to call the model.
 
-A variant of the traditional HMC sampler has been introduced in reference \citep{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. So, in a automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls a each generation. Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class.
+A variant of the traditional HMC sampler has been introduced in reference \citep{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. So, in a automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls a each generation.
+
+Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class. So, We have setup \texttt{NUTS} sampler Using the same DES-Y1 modeling as in previous section, with 
+\begin{itemize}
+    \item first a reparametrisation of the latent variable uniform priors (Tab.~\ref{tab-DESY1}) to use a unified uniform prior $\mathcal{U}[-5,5]$;
+    \item second for the warm-up phase we ask for mass matrix optimisation with essentially a diagonal form but with a block structure for the following sets of parameters $(\Omega_b,\Omega_c,\sigma_8,w_0,h)$ and $(b_i)_{i:1\dots5}$. This matrix structuring is motivated by the expected degree of correlation of the concerned parameters as can be shown for instance in figure \ref{fig_svi_nuts_4}.
+\end{itemize}
+We have run two sampling runs with different settings although similar. The first run labelled "(0)" has been undertaken on a single  NVidia Titan Xp (12GB RAM)  with 16 chains of 1,000 samples each (\texttt{vectorized} option) after a warm-up phase consisting of 200 samples and the \texttt{max\_tree\_depth} has been set to  7 (ie. maximum of 128 steps for each iteration).  The second run labelled "(1)" was done with a NVidia V100 (32GB RAM) with 10 chains of 1,000 samples each after a warm-up phase consisting of 200 samples and the \texttt{max\_tree\_depth} has been set to  5 (ie. maximum of 32 steps for each iteration). 
+
+The results in terms of sampling efficiency are detailed in Tab.~\ref{tab-ESS-NUTS_SVI-1}. The confidential level iso-contours are all in agreement with the \texttt{cobaya} sampler with  significantly larger efficiency. {\color{red} FIGURE?}  It is worth to point out that the mass matrix structuring is a very effective tuning to increase the sampling efficiency (gain of about a factor 2). The elapse time was 20 hours (5 hours) for run "0" ("1") showing a linear scaling with respect to the number of steps per iteration, while the sampling efficiencies of both runs are very similar, so the user is highly encouraged to decrease the \texttt{max\_tree\_depth} parameter. 
+ 
+%  JEC: the 16 chains X 1000 (max_tree_depth=7) is the run done by Francois. 20 heures sur un GPU TitanXp avec 12 GB de ram 
+% 5h sur V100 10 chains x 1000 (max_tree_depth=5)
+
 %
 \subsubsection{Neural Reparametrisation}
 \label{sec-Neural-Reparametrisation}
@@ -381,21 +395,34 @@ which is evaluated with optimal $\lambda^\ast$ according to maximization of the 
 \end{figure}
 
 
+Using the same DES-Y1 simulation as in previous section, we have used the \numpyro\ library to first use a simple Multivariate Normal distribution as \textit{guide} to approximate the true posterior (\textit{model}) to feed a SVI. The Adam optimizer has been used with a learning rate set to $10^{-3}$.  Then, we have used the Neural Transport method to generate Markov Chains of different sizes by the NUTS sampler. The SVI optimization requires 20,000 steps and has been performed in about 2 hours on a Nvidia V100 GPU (32 GB RAM). Concerning the NUTS running on the same GPU, the chains have run 200 warm samples, and then 200 samples, 1000 samples on a single chain, and finally we have run 10 chains (\texttt{vectorized} option) with 1000 samples each. The elapse time for each of these 3 runs is 50 minutes, 150 minutes and 5 hours, respectively. Notice that the \texttt{max\_tree\_depth} parameter has been set to 5 instead of the default value of 10 to speed up running. The results of the evolution of the contours compared to the NUTS sampling  run "(1)" (Sec.~\ref{sec-NUTS}) are displayed in figures \ref{fig_svi_nuts_1}, \ref{fig_svi_nuts_2}, \ref{fig_svi_nuts_3}. The  agreement is also rather good for the highly correlated $(b_i)_{i:1,\dots,5}$ bias parameters as show on figure \ref{fig_svi_nuts_4}. Results in terms of sampling efficiency are shown on Tab.~\ref{tab-ESS-NUTS_SVI-1}. On can see SVI followed by Neutral Parametrisation gives also high efficiency without the need by the user to setup a particular a priori mass matrix structure (use \texttt{dense} matrix option). 
+%
 \subsection{Discussion}
-Using the same DES-Y1 simulation as in previous section, we have used the \numpyro\ library to first use a simple Multivariate Normal distribution as \textit{guide} to approximate the true posterior (\textit{model}) to feed a SVI. The Adam optimizer has been used with a learning rate set to $10^{-3}$.  Then, we have used the Neural Transport method to generate Markov Chains of different sizes by the NUTS sampler. The SVI optimization requires 20,000 steps and has been performed in about 2 hours on a V100 GPU. Concerning the NUTS running on the same GPU, the chains have run 200 warm samples, and then 200 samples, 1000 samples on a single chain, and finally we have run 10 chains (vectorized) with 1000 samples each. The elapse time for each of these 3 runs is 50 minutes, 150 minutes and 5 hours, respectively. Notice that the \texttt{max\_tree\_depth} parameter has been set to 5 instead of the default value of 10 to speed up running. The results of the evolution of the contours compared to the direct NUTS sampling lasting 20 hours on the same GPU are shown on the figures \ref{fig_svi_nuts_1}, \ref{fig_svi_nuts_2}, \ref{fig_svi_nuts_3}. The  agreement is also rather good for the highly correlated $(b_i)_{i:1,\dots,5}$ bias parameters as show on figure \ref{fig_svi_nuts_4}. Results upon ESS are shown on Tab.~\ref{tab-ESS-NUTS_SVI-1}. On can see that the NUTS sampling with a \texttt{max\_tree\_depth} parameter of 5 after the SVI and Neutral Parametrisation gives same order of efficiencies (lower by a factor 2 for some parameters) compared to the NUTS sampling with block mass matrix and \texttt{max\_tree\_depth} parameter of 7.
+%
+The question that one may naturally arises are what is the HMC/NUTS gain compared to the well known standard \texttt{cobaya} sampler? 
+One may argue that number of efficient sample per  model call is a right metric to consider, ie. if one demands $N_s$ samples then  
+\begin{equation}
+    \eta = \frac{n_{eff}}{#\ of\ calls} = \frac{N_s \times \varepsilon}{N_s \times n_{steps}} = \frac{\varepsilon}{n_{steps}}
+\end{equation}
+with $\varepsilon$ the sampler efficiency and $n_{steps}$ the number of steps (calls) per sample generation. Then, for \texttt{cobaya} one roughly gets $\varepsilon\approx 1\%$ with $n_{steps}=1$ while with the NUTS sampler $\varepsilon\approx 50\%$ but with $n_{steps}=2^5$ or more. So, the $\eta$ values for both methods are at the end of the day comparable (ie. about $1\%$). So, at first sight it seems that there might be no gain to use HMC/NUTS sampler compared to standard MCMC sampler.  
 
-The remarkable outcome is that within few hours on a single GPU, one can figure out progressively if the contours have a meaningful appearance before launching multi-GPU multi-chains NUTS sampling to get high statistics Markov Chain with high effective sample size (ESS). 
-
-
-
+But the above metric is one aspect of sample generation. One should have in mind that the low sampling efficiency of standard MCMC sampler requires mobilizing a large amount of resources to produce a sufficient large sample batch in a reasonable time scale, ie. several days on dedicated infrastructure. Moreover, the user is faced to a dilemma to perform or not a statistical sample selection post-processing as \textit{thinning} beyond the \textit{burn-in removal} which is a rather delicate procedure and time consuming too, needing how-know to be conducted correctly \citep{doi:10.1146/annurev-statistics-040220-091727, 2015arXiv151007727O}. So, the authors think that it is worth considering methods that by construction are more efficient. Moreover, using SVI with reparametrisation offers a way to undertake a progressive validation of the model with rather modest sample size (eg. 200 samples) by producing good quality marginal contours in few hours. This validation phase can save time before producing sizeable batch for final analysis. 
+%
 \begin{table}[htb]
-\caption{Results of the relative effective sample size (aka ESS, "bulk") in percent computed by the \texttt{Arviz} library \citep{arviz_2019}. (1) are computed from 10 parallel chains of 200 warm up samples followed by 1000 samples each obtained by NUTS sampler after the several uniform distributions (Tab.~\ref{tab-DESY1}) transformed in an homogeneous uniform distribution in the $[-5,5]$ interval, while (2) are the results of SVI followed by NUTS sampler after a Neural Transform  with 10 chains of 200 warm up samples followed by 1000 samples each. In method (1) the \texttt{max\_tree\_depth} parameter is set to 7 while it is set to 5 in the second method.}
+\caption{Results of the relative effective sample size (aka ESS, "bulk") in percent computed by the \texttt{Arviz} library \citep{arviz_2019}.
+{\color{red} 
+(0) "F.L run" are computed from NUTS sampler with 16 parallel chains of 1,000 samples each and 200 warm-up and \texttt{max\_tree\_depth=7} (see text) The numbers are from \texttt{n\_eff/16,000};
+}
+(1) "J.E run" are computed from NUTS sampler 10 with parallel chains of 1,000 samples each and 200 warm-up nd \texttt{max\_tree\_depth=5} (see text); (2) are the results of SVI followed by NUTS sampler of setup (1) after a Neural Transform (see text).}
 \label{tab-ESS-NUTS_SVI-1}
  \centering
 \begin{tabular}{ccccccccccc}
 \hline
-         & $\Omega_b$ & $\Omega_c$ & $\sigma_8$ & $w_0$ & $h$ & $n_s$ & $A$ & $\eta$\\
+    & $\Omega_b$ & $\Omega_c$ & $\sigma_8$ & $w_0$ & $h$ & $n_s$ & $A$ & $\eta$\\
 \hline
+% (0)  JEC extrait de https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper/blob/master/notebooks/VectorizedNumPyro_block.ipynb
+\color{red}(0) & $51.5$ &  $49.5$     & $39.3$     & $39.3$ & $52.0$ &  $50.2$ & $69.8$ & $46.2$\\
+% (1) & (2) from JEC independant runs @ CCIN2P3
 (1) & $48.1$ &  $45.6$     & $36.2$     & $33.4$ & $52.8$ & $50.1$ & $68.8$ & $48.8$\\
 (2) & $38.7$ &  $24.8$     & $16.0$     & $18.6$ & $43.3$ & $39.5$ & $21.7$ & $16.6$\\
 \hline
