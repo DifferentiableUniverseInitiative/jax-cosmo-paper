@@ -67,7 +67,7 @@
 %%%% new command (JEC)
 \newcommand{\nn}{\nonumber}
 \newcommand{\numpyro}{\texttt{NumPyro}}
-\newcommand{\bydef}{\overset{def.}{\equiv}}
+\newcommand{\bydef}{:=}
 
 
 \begin{document}
@@ -148,6 +148,9 @@ In this section, we describe the cosmological modeling provided by jax-cosmo, an
 % Explain how the code is structured, mention some tricks of autodiff if we have some
 % Follows a bit the structure of the CCL library
 
+Concerning JAX ecosystem\footnote{A more exhaustive list can be consulted at the following Web site \url{https://project-awesome.org/n2cholas/awesome-jax}.} which is rapidly growing, we can list some libraries that the authors have used as \texttt{Flax}\footnote{\url{https://flax.readthedocs.io/}} \citep{flax2020github} a high-performance neural network library, \numpyro\footnote{\url{https://num.pyro.ai}} \citep{phan2019composable,bingham2019pyro} a probabilistic programming with \texttt{NumPy} that is used in this paper, \texttt{JAXopt}\footnote{\url{https://jaxopt.github.io}} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable optimizers, \texttt{Optax}\footnote{\url{https://optax.readthedocs.io}} \citep{optax2020github} a gradient processing and optimization library.
+
+
 \subsection{Background cosmology}
 % Usual stuff
 
@@ -222,7 +225,7 @@ F = - jax.hessian(likelihood)(cosmo)
 
 \section{Gradient-based fast cosmological inference}
 %
-In the following sections we briefly review the statistical methods used to make some cosmological parameter inference. Namely we have used \textit{Stochastic Variational Inference} (aka SVI), \textit{Hybrid Hamiltonian Monte Carlo} (aka HMC), a variant of HMC knows as \textit{No-U-Turn} (aka NUTS), and finally the use of  \textit{Neutral Reparametrization}.   
+In the following sections we briefly review the statistical methods used to make some cosmological parameter inference. Namely we have used \textit{Stochastic Variational Inference} (aka SVI), \textit{Hybrid Hamiltonian Monte Carlo} (aka HMC), a variant of HMC knows as \textit{No-U-Turn} (aka NUTS), and finally the use of  \textit{Neural Transport}.   
 %
 \subsection{Stochastic Variational Inference}
 %
@@ -241,7 +244,7 @@ The function $\mathcal{L}(\lambda)$ is the cost function used in practice. It is
 \mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{q(z;\lambda)}\left[ \log q(z;\lambda)\right]}_{guide} - \underbrace{\mathbb{E}_{q(z;\lambda)}\left[ \log p(z,\mathcal{D}) \right]}_{model}
 \label{eq-loss-svi-1}
 \end{equation}
-where the \textit{guide}, in the \numpyro\ word, may be a multi-variate gaussian distribution (MVN) for instance. 
+where the \textit{guide} in the \numpyro\ library may be a multi-variate Gaussian distribution (MVN) for instance.
 
 Using the auto-differentation tool, one can use "black-box" guides (aka \textit{automatic differentiation variational inference}). As stated by the authors of \citep{2016arXiv160300788K} ADVI helps specifying a variational family appropriate to the model, computing the corresponding objective
 function, taking derivatives, and running a gradient-based or coordinate-ascent optimization. First is defined a bijective differentiable transformation $T$ of the original latent variables $z$ into new variables $\xi$, such $\xi=T(z)$ and $z=T^{-1}(\xi)$. One can develop "AutoGuides" (\numpyro\ terminology) that can be adapted to the user models. Then, the cost function reads
@@ -281,7 +284,7 @@ For the use case of the MVN (auto)guide, one gets
 &\left. \left. \qquad\qquad\qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right] \times \xi^T 
 \right\}+ (L^{-1})^T
 \end{align}
-The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the "S" of SVI. Even, if one can sample from the optimized  $q(z,\lambda^\ast)$ distribution, we have used SVI as front-end to  a NUTS sampler which is described in section \ref{sec-Neural-Reparametrisation} as \textit{Neural Reparametrisation}.
+The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the "S" of SVI. Even, if one can sample from the optimized  $q(z,\lambda^\ast)$ distribution, we have used SVI as front-end to  a NUTS sampler which is described in section \ref{sec-Neural-Reparametrisation} as \textit{Neural Transport}.
 %
 \subsection{Hamiltonian Monte Carlo}
 
@@ -355,13 +358,13 @@ Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} 
 \end{itemize}
 We have setup a NUTS sampling using 16 chains of 1,000 samples each (\texttt{vectorized} option) after a warm-up phase consisting of 200 samples and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). The job has been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or NVidia V100 (32GB RAM) at the CCIN2P3 Center.
 
-The results in terms of sampling efficiency are detailed in Tab.~\ref{tab-ESS-NUTS_SVI-1}. The confidential level iso-contours are all in agreement with the \texttt{cobaya} sampler and are reported as the blue curves in figures presented in section \ref{sec-Neural-Reparametrisation}. It is worth to point out that the mass matrix structuring is a very effective when NUTS is run stand-alone as it increases the sampling efficiency by about a factor 2.  The elapse time was 20 hours for the default setting (\texttt{max\_tree\_depth=7}). Anticipating the section \ref{sec-Neural-Reparametrisation} devoted to the Neural Reparametrisation which is an effective alternative, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Tab.~\ref{tab-ESS-NUTS_SVI-1}), so the user is highly encouraged to tune this critical parameter. 
+The results in terms of sampling efficiency are detailed in Tab.~\ref{tab-ESS-NUTS_SVI-1}. The confidential level iso-contours are all in agreement with the \texttt{cobaya} sampler and are reported as the blue curves in figures presented in section \ref{sec-Neural-Reparametrisation}. It is worth to point out that the mass matrix structuring is a very effective when NUTS is run stand-alone as it increases the sampling efficiency by about a factor 2.  The elapse time was 20 hours for the default setting (\texttt{max\_tree\_depth=7}). Anticipating the section \ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective alternative, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Tab.~\ref{tab-ESS-NUTS_SVI-1}), so the user is highly encouraged to tune this critical parameter. 
  
 %  JEC: the 16 chains X 1000 (max_tree_depth=7) is the run done by Francois. 20 heures sur un GPU TitanXp avec 12 GB de ram 
 % 5h sur V100 10 chains x 1000 (max_tree_depth=5)
 
 %
-\subsubsection{Neural Reparametrisation}
+\subsubsection{Neural Transport}
 \label{sec-Neural-Reparametrisation}
 %
 If the SVI method can be used as is to get $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution, the \textit{Neural Transport MCMC} method \citep{2014arXiv1412.5492P,2019arXiv190303704H} is an efficient way to boost HMC efficiency, especially in target distribution unfavourable geometry where for instance the leapfrog integration algorithm has to face squeezed join distributions for a subset of variables. From SVI, one obtains a first approximation of the target distribution and we show that the change-of-variable $z=F_\lambda(\zeta)$ is such that
