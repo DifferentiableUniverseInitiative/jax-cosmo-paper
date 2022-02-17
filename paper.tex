@@ -68,6 +68,7 @@
 \newcommand{\nn}{\nonumber}
 \newcommand{\numpyro}{\texttt{NumPyro}}
 \newcommand{\bydef}{:=}
+\newcommand{\jaxcosmo}{\texttt{jax-cosmo}}
 
 
 \begin{document}
@@ -94,19 +95,19 @@
 %% \address{Address\fnref{label3}}
 %% \fntext[label3]{}
 
-\title{jax-cosmo: End-to-End Differentiable and GPU Accelerated Cosmology Library}
+\title{\jaxcosmo: End-to-End Differentiable and GPU Accelerated Cosmology Library}
 
 %% use optional labels to link authors explicitly to addresses:
 %% \author[label1,label2]{}
 %% \address[label1]{}
 %% \address[label2]{}
 
-\author{jax-cosmo contributors}
+\author{\jaxcosmo\ contributors}
 
 \address{}
 
 \begin{abstract}
-With jax-cosmo, Fisher forecasts are accurate and instantaneous, inference is lightning-fast, survey optimization is trivial. \github
+With \jaxcosmo, Fisher forecasts are accurate and instantaneous, inference is lightning-fast, survey optimization is trivial. \github
 \end{abstract}
 
 %%Graphical abstract
@@ -143,13 +144,12 @@ Although these package does not take benefit of recent advance in automatic diff
 
 Recently, the \texttt{JAX} library\footnote{\url{https://jax.readthedocs.io}} \citep{jax2018github} brings a rapid rise as it can automatically differentiate native \texttt{Python} and \texttt{NumPy} functions which is quite attractive to speed up the learning process. \texttt{JAX} offers an easy palatalization mechanism, the Just-In-Time compilation and optimization code for CPU, GPU and TPU hardware which make it very attractive. Although \texttt{JAX} library contains dedicated packages as \texttt{jax.numpy} and \texttt{jax.scipy} which are not simple wrapping, as well as exemple libraries as \texttt{Stax} for simple but flexible neural network development, it has been the seed for an ecosystem\footnote{A more exhaustive list can be consulted at the following Web site \url{https://project-awesome.org/n2cholas/awesome-jax}.} which is rapidly growing. We can list some libraries that the authors have used as \texttt{Flax}\footnote{\url{https://flax.readthedocs.io/}} \citep{flax2020github} a high-performance neural network library, \numpyro\footnote{\url{https://num.pyro.ai}} \citep{phan2019composable,bingham2019pyro} a probabilistic programming with \texttt{NumPy} that is used in this paper, \texttt{JAXopt}\footnote{\url{https://jaxopt.github.io}} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable optimizers, \texttt{Optax}\footnote{\url{https://optax.readthedocs.io}} \citep{optax2020github} a gradient processing and optimization library.
 
-In this context we have developed the \texttt{jax-cosmo} library \url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}
-
+In this context we have developed the \texttt{jax-cosmo} library available on GitHub repository \github\footnote{ \url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}} described in section \ref{sec-jaxcosmo-design}. We show how to use this library in different use-cases as rapid and numerically stable Fisher forecasts (Sec.~\ref{sec-fisher-forecast}), optimisation strategy as in the LSST-DESC 3x2pt tomography optimization challenge \citep{2021OJAp....4E..13Z} (Sec.~\ref{sec-FOM-optimisation}), and more advanced gradient-based cosmological inference with Stochastic Variational Inference (Sec.~\ref{sec-SVI}) as well as Hamiltonian Monte carlo and its variant No-U-Turn (Sec.\ref{sec-NUTS}) and a mixture of these methods detailed in section \ref{sec-Neural-Reparametrisation}.
 
 % \section{JAX: Autograd meets XLA}
 
 \section{Modeling and implementation}
-
+\label{sec-jaxcosmo-design}
 In this section, we describe the cosmological modeling provided by jax-cosmo, and its implementation in JAX.
 
 % Explain how the code is structured, mention some tricks of autodiff if we have some
@@ -198,7 +198,7 @@ In this section, we adopt as a setting a DES Y1 3x2pt-like analysis.
 
 
 \subsection{Instantaneous Fisher Forecasts}
-
+\label{sec-fisher-forecast}
 \begin{minted}{python}
 def likelihood(cosmo):
   # Compute mean and covariance of angular Cls, 
@@ -222,6 +222,7 @@ F = - jax.hessian(likelihood)(cosmo)
 % Plot showing error on some parameters
 
 \subsection{Survey Optimization by FoM Maximization}
+\label{sec-FOM-optimisation}
 % Needs to mention the tomo challenge, mention that we can backpropagate through a NN and the cosmology model
 % Maybe this can be only mentioned in the discussion.
 
@@ -234,6 +235,7 @@ F = - jax.hessian(likelihood)(cosmo)
 In the following sections we briefly review the statistical methods used to make some cosmological parameter inference. Namely we have used \textit{Stochastic Variational Inference} (aka SVI), \textit{Hybrid Hamiltonian Monte Carlo} (aka HMC), a variant of HMC knows as \textit{No-U-Turn} (aka NUTS), and finally the use of  \textit{Neural Transport}.   
 %
 \subsection{Stochastic Variational Inference}
+\label{sec-SVI}
 %
 Let us remind briefly what is the \textit{Stochastic Variational Inference} method \citep{2012arXiv1206.7051H, 2017arXiv171105597Z} and show where auto-differentiation helps. If one  writes $p(z)$ the prior, $p(\mathcal{D}|z)$ the likelihood and $p(\mathcal{D})$ the marginal likelihood, then thanks to the  Bayes theorem one gets $p(z|\mathcal{D})=p(z)p(\mathcal{D}|z)/p(\mathcal{D})$ the posterior distribution of a model with latent variables $z$ and a set of observations $\mathcal{D}$. The VI aims to get an approximation of this distribution, ie. $p(z|\mathcal{D}) \approx q(z;\lambda)$, by determining the variational parameters $\lambda$ of a predefined distribution. To do so, one uses the Kullback-Leibler divergence of the two distributions $KL(q(z;\lambda)||p(z|\mathcal{D}))$ leading to the following relation
 \begin{align}
@@ -321,9 +323,9 @@ a relaxation to the integration accuracy.
 That gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing,
 but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluations per point, greatly slowing it
 in high dimension, and as with the Fisher forecasting is highly prone to numerical error. Automatically
-calculating a Hessian, as in JAX-Cosmo, makes it feasible and efficient.
+calculating a Hessian, as in \jaxcosmo, makes it feasible and efficient.
 
-Below we show an example set of HMC constraints using JAX-Cosmo to constrain a simulated
+Below we show an example set of HMC constraints using \jaxcosmo\ to constrain a simulated
 Dark Energy Survey Year One (DES-Y1) lensing and clustering-like (3x2pt) likelihood, using 21 parameters\footnote{We omit the 
 five clustering sample photometric redshift parameters}.  We re-parametrize the space to unit mass using the Cholesky 
 decomposition
@@ -342,7 +344,7 @@ on a CPU.  This proof-of-principle example can certainly be hugely improved usin
 \begin{figure}
 \includegraphics[width=0.95\columnwidth]{figures/hmc.pdf}
 \caption{Constraints on three of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using a simple Hamiltonian
-Monte Carlo sampler with JAX-Cosmo (blue), compared to the \texttt{Cobaya} Metropolis-Hastings sampler (orange).}
+Monte Carlo sampler with \jaxcosmo\ (blue), compared to the \texttt{Cobaya} Metropolis-Hastings sampler (orange).}
 \end{figure}
 
 
@@ -356,7 +358,7 @@ If this is needed then HMC could use a fast approximation to a CMB theory spectr
 % Show the advantage of using NUTS 
 % look at difference in efficiency in terms of how many times we need to call the model.
 
-A variant of the traditional HMC sampler has been introduced in reference \citep{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. So, in a automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls a each generation.
+The No-U-Turn (aka NUTS))  variant of the traditional HMC sampler has been introduced in reference \citep{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. So, in a automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls a each generation.
 
 Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class. So, We have setup \texttt{NUTS} sampler Using the same DES-Y1 modeling as in previous section, with 
 \begin{itemize}
