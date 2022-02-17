@@ -137,11 +137,13 @@ With jax-cosmo, Fisher forecasts are accurate and instantaneous, inference is li
 %% main text
 
 \section{Introduction}
-Monte Carlo Markov Chain Bayesian inference is a widely used technique in Cosmology since the work of \citep{2001ApJ...563L..95K,2003MNRAS.341.1084R} and has been the keystone for CMB analysis thanks to software as  \texttt{CosmoMC}\footnote{\url{https://cosmologist.info/cosmomc/readme.html}} \citep{2002PhRvD..66j3511L} as well as   \texttt{Cobaya}\footnote{\url{https://cobaya.readthedocs.io}} \citep{2019ascl.soft10019T,2021JCAP...05..057T} which is the baseline option for the current on going cosmological experiments.
+Monte Carlo Markov Chain Bayesian inference is a widely used technique in Cosmology since the work of \citep{2001ApJ...563L..95K,2003MNRAS.341.1084R} and has been the keystone for past and current analysis\footnote{see for instance \url{https://ui.adsabs.harvard.edu/abs/2021JCAP...05..057T/citations}.} thanks to software as  \texttt{CosmoMC}\footnote{\url{https://cosmologist.info/cosmomc/readme.html}} \citep{2002PhRvD..66j3511L} as well as   \texttt{Cobaya}\footnote{\url{https://cobaya.readthedocs.io}} \citep{2019ascl.soft10019T,2021JCAP...05..057T}. 
 
 Although these package does not take benefit of recent advance in automatic differentiation (aka \textit{autodiff}) \citep{2015arXiv150205767G, 2018arXiv181105031M} which is been widely used in neural network optimization and more generally for machine learning and computational statistics as for instance Hamiltonian Monte Carlo sampling and Variational Inference, two subjects covered in this paper. The \textit{autodiff} has been implemented in widely used libraries as for instance \texttt{Stan}\footnote{\url{https://mc-stan.org/users/documentation}} \citep{JSSv076i01} and \texttt{TensorFlow}\footnote{\url{https://www.tensorflow.org/}}  \citep{tensorflow2015-whitepaper}. 
 
-Recently, the \texttt{JAX} library\footnote{\url{https://jax.readthedocs.io}} \citep{jax2018github} brings a rapid rise as it can automatically differentiate native \texttt{Python} and \texttt{NumPy} functions which is quite attractive to speed up the learning process. \texttt{JAX} offers an easy palatalization mechanism, the Just-In-Time compilation and optimization code for CPU, GPU and TPU hardware which make it very attractive. Concerning \texttt{JAX} ecosystem\footnote{A more exhaustive list can be consulted at the following Web site \url{https://project-awesome.org/n2cholas/awesome-jax}.} which is rapidly growing, we can list some libraries that the authors have used as \texttt{Flax}\footnote{\url{https://flax.readthedocs.io/}} \citep{flax2020github} a high-performance neural network library, \numpyro\footnote{\url{https://num.pyro.ai}} \citep{phan2019composable,bingham2019pyro} a probabilistic programming with \texttt{NumPy} that is used in this paper, \texttt{JAXopt}\footnote{\url{https://jaxopt.github.io}} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable optimizers, \texttt{Optax}\footnote{\url{https://optax.readthedocs.io}} \citep{optax2020github} a gradient processing and optimization library.
+Recently, the \texttt{JAX} library\footnote{\url{https://jax.readthedocs.io}} \citep{jax2018github} brings a rapid rise as it can automatically differentiate native \texttt{Python} and \texttt{NumPy} functions which is quite attractive to speed up the learning process. \texttt{JAX} offers an easy palatalization mechanism, the Just-In-Time compilation and optimization code for CPU, GPU and TPU hardware which make it very attractive. Although \texttt{JAX} library contains dedicated packages as \texttt{jax.numpy} and \texttt{jax.scipy} which are not simple wrapping, as well as exemple libraries as \texttt{Stax} for simple but flexible neural network development, it has been the seed for an ecosystem\footnote{A more exhaustive list can be consulted at the following Web site \url{https://project-awesome.org/n2cholas/awesome-jax}.} which is rapidly growing. We can list some libraries that the authors have used as \texttt{Flax}\footnote{\url{https://flax.readthedocs.io/}} \citep{flax2020github} a high-performance neural network library, \numpyro\footnote{\url{https://num.pyro.ai}} \citep{phan2019composable,bingham2019pyro} a probabilistic programming with \texttt{NumPy} that is used in this paper, \texttt{JAXopt}\footnote{\url{https://jaxopt.github.io}} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable optimizers, \texttt{Optax}\footnote{\url{https://optax.readthedocs.io}} \citep{optax2020github} a gradient processing and optimization library.
+
+In this context we have developed the \texttt{jax-cosmo} library \url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}
 
 
 % \section{JAX: Autograd meets XLA}
@@ -177,7 +179,7 @@ In this section, we describe the cosmological modeling provided by jax-cosmo, an
 
 \subsection{Validation against the Core Cosmology Library (CCL)} 
 
-\begin{figure}[h]
+\begin{figure}[ht]
     \centering
     \includegraphics[width=\columnwidth]{figures/halofit_pk.png}
     \caption{Comparison of matter power spectrum between CCL and jax-cosmo. \textbf{Example of validation plot} \href{https://github.com/DifferentiableUniverseInitiative/jax_cosmo/blob/master/docs/notebooks/CCL_comparison.ipynb}{\faFileCodeO}}
@@ -328,8 +330,9 @@ decomposition
 of the covariance as estimated with an initial Fisher matrix; this lets us reflect the trajectories when they reach the
 edge of the parameter space, as recommended in \citep{NIPS2015_8303a79b}.  We use a fixed number (25) of integration steps and 
 a fixed integration period (0.02), this was chosen heuristically to give a reasonable acceptance rate, but is likely to be
-far from optimal.  We compare to the highly-optimized {\sc Cobaya} 
-Metropolis-Hastings implementation \citep{cobaya2,cobaya1}, initializing it with the Fisher matrix as a proposal and
+far from optimal.  We compare to the highly-optimized \texttt{Cobaya} 
+Metropolis-Hastings implementation  %\citep{cobaya2,cobaya1} JEC it may preferable to have a single up to date reference in JCAP
+\citep{2019ascl.soft10019T,2021JCAP...05..057T}, initializing it with the Fisher matrix as a proposal and
 tuning thereafter.  We ran two processes for each sampler, with four CPU threads per process.
 
 The Hamiltonian sampler required around half the number of samples as the Metropolis (70,000 vs 140,000) to reach approximately the same
@@ -339,7 +342,7 @@ on a CPU.  This proof-of-principle example can certainly be hugely improved usin
 \begin{figure}
 \includegraphics[width=0.95\columnwidth]{figures/hmc.pdf}
 \caption{Constraints on three of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using a simple Hamiltonian
-Monte Carlo sampler with JAX-Cosmo (blue), compared to the Cobaya Metropolis-Hastings sampler (orange).}
+Monte Carlo sampler with JAX-Cosmo (blue), compared to the \texttt{Cobaya} Metropolis-Hastings sampler (orange).}
 \end{figure}
 
 
@@ -362,7 +365,7 @@ Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} 
 \end{itemize}
 We have setup a NUTS sampling using 16 chains of 1,000 samples each (\texttt{vectorized} option) after a warm-up phase consisting of 200 samples and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). The job has been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or NVidia V100 (32GB RAM) at the CCIN2P3 Center.
 
-The results in terms of sampling efficiency are detailed in Tab.~\ref{tab-ESS-NUTS_SVI-1}. The confidential level iso-contours are all in agreement with the \texttt{cobaya} sampler and are reported as the blue curves in figures presented in section \ref{sec-Neural-Reparametrisation}. It is worth to point out that the mass matrix structuring is a very effective when NUTS is run stand-alone as it increases the sampling efficiency by about a factor 2.  The elapse time was 20 hours for the default setting (\texttt{max\_tree\_depth=7}). Anticipating the section \ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective alternative, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Tab.~\ref{tab-ESS-NUTS_SVI-1}), so the user is highly encouraged to tune this critical parameter. 
+The results in terms of sampling efficiency are detailed in Tab.~\ref{tab-ESS-NUTS_SVI-1}. The confidential level iso-contours are all in agreement with the \texttt{Cobaya} sampler and are reported as the blue curves in figures presented in section \ref{sec-Neural-Reparametrisation}. It is worth to point out that the mass matrix structuring is a very effective when NUTS is run stand-alone as it increases the sampling efficiency by about a factor 2.  The elapse time was 20 hours for the default setting (\texttt{max\_tree\_depth=7}). Anticipating the section \ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective alternative, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Tab.~\ref{tab-ESS-NUTS_SVI-1}), so the user is highly encouraged to tune this critical parameter. 
  
 %  JEC: the 16 chains X 1000 (max_tree_depth=7) is the run done by Francois. 20 heures sur un GPU TitanXp avec 12 GB de ram 
 % 5h sur V100 10 chains x 1000 (max_tree_depth=5)
@@ -408,7 +411,7 @@ The elapse time for each of these 3 runs is 50 minutes, 150 minutes and 5 hours,
 %
 \subsection{Discussion}
 %
-The question that one may naturally arises are what is the HMC/NUTS gain compared to the well known standard \texttt{cobaya} sampler? 
+The question that one may naturally arises are what is the HMC/NUTS gain compared to the well known standard \texttt{Cobaya} sampler? 
 In one hand, one may argue considering the elapse time of execution that the number of efficient sample per model call is a right metric to consider: 
 \begin{equation}
     \eta = \frac{n_{eff}}{\#\ of\ calls} = \frac{N_s \times \varepsilon}{N_s \times n_{steps}} = \frac{\varepsilon}{n_{steps}}
