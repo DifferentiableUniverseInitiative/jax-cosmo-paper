@@ -137,6 +137,7 @@ With jax-cosmo, Fisher forecasts are accurate and instantaneous, inference is li
 %% main text
 
 \section{Introduction}
+Concerning JAX ecosystem\footnote{A more exhaustive list can be consulted at the following Web site \url{https://project-awesome.org/n2cholas/awesome-jax}.} which is rapidly growing, we can list some libraries that the authors have used as \texttt{Flax}\footnote{\url{https://flax.readthedocs.io/}} \citep{flax2020github} a high-performance neural network library, \numpyro\footnote{\url{https://num.pyro.ai}} \citep{phan2019composable,bingham2019pyro} a probabilistic programming with \texttt{NumPy} that is used in this paper, \texttt{JAXopt}\footnote{\url{https://jaxopt.github.io}} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable optimizers, \texttt{Optax}\footnote{\url{https://optax.readthedocs.io}} \citep{optax2020github} a gradient processing and optimization library.
 
 
 % \section{JAX: Autograd meets XLA}
@@ -148,7 +149,6 @@ In this section, we describe the cosmological modeling provided by jax-cosmo, an
 % Explain how the code is structured, mention some tricks of autodiff if we have some
 % Follows a bit the structure of the CCL library
 
-Concerning JAX ecosystem\footnote{A more exhaustive list can be consulted at the following Web site \url{https://project-awesome.org/n2cholas/awesome-jax}.} which is rapidly growing, we can list some libraries that the authors have used as \texttt{Flax}\footnote{\url{https://flax.readthedocs.io/}} \citep{flax2020github} a high-performance neural network library, \numpyro\footnote{\url{https://num.pyro.ai}} \citep{phan2019composable,bingham2019pyro} a probabilistic programming with \texttt{NumPy} that is used in this paper, \texttt{JAXopt}\footnote{\url{https://jaxopt.github.io}} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable optimizers, \texttt{Optax}\footnote{\url{https://optax.readthedocs.io}} \citep{optax2020github} a gradient processing and optimization library.
 
 
 \subsection{Background cosmology}
