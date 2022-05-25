@@ -304,7 +304,7 @@ samples from high dimensional parameter spaces.  It was introduced in \citep{198
 and developed extensively since.  See \citet{betancourt} for a full review; we describe
 very basic features here.
 
-HMC samples spaces by generating particle tracjectories through the space, using the log-posterior
+HMC samples spaces by generating particle trajectories through the space, using the log-posterior
 as the negative potential energy of a particle at each point $q$ in the space.  At each sample a trajectory are initialized
 with a random momentum $p$, and then integrated using Hamilton's equations with a numerical integration:
 \begin{align}
@@ -320,8 +320,7 @@ and a Metropolis-Hastings acceptance criterion on the total energy $H = p^T M^{-
 If the trajectory is perfectly simulation then this acceptance is unity, since energy is conserved; applying it allows
 a relaxation to the integration accuracy.
 
-That gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing,
-but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluations per point, greatly slowing it
+That gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing, but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluations per point, greatly slowing it
 in high dimension, and as with the Fisher forecasting is highly prone to numerical error. Automatically
 calculating a Hessian, as in \jaxcosmo, makes it feasible and efficient.
 
