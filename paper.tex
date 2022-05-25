@@ -232,7 +232,7 @@ F = - jax.hessian(likelihood)(cosmo)
 
 \section{Gradient-based fast cosmological inference}
 %
-In the following sections we briefly review the statistical methods used to make some cosmological parameter inference. Namely we have used \textit{Stochastic Variational Inference} (aka SVI), \textit{Hybrid Hamiltonian Monte Carlo} (aka HMC), a variant of HMC knows as \textit{No-U-Turn} (aka NUTS), and finally the use of  \textit{Neural Transport}.   
+In the following sections we review some statistical methods used to make the cosmological parameter inference with \jaxcosmo. We have used the \textit{Stochastic Variational Inference} (aka SVI), a variant of Hamiltonian Monte Carlo knows as \textit{No-U-Turn} (aka NUTS), and finally NUTS after a \textit{Neural Transport} SVI. All  the methods have been implemented using the \numpyro Probabilistic Programming Language (PPL). 
 %
 \subsection{Stochastic Variational Inference}
 \label{sec-SVI}
@@ -242,7 +242,7 @@ Let us remind briefly what is the \textit{Stochastic Variational Inference} meth
 \log p(\mathcal{D}) &= \mathtt{ELBO} +  KL(q(z;\lambda)||p(z|\mathcal{D})) \label{eq-ELBO} \\
 \mathrm{with} \ \mathtt{ELBO} &\equiv -\mathbb{E}_{q(z;\lambda)}\left[ \log q(z;\lambda)\right] + \mathbb{E}_{q(z;\lambda)}\left[ \log p(z,\mathcal{D}) \right] 
 \end{align}
-which defines the evidence lower bound (ELBO) that one tends to maximize to get the $\lambda$ values and the  highest lower bound on the logarithm of the marginal probability of the observations $\log p(\mathcal{D})$. So, the optimal variational distribution satisfies
+which defines the \textit{evidence lower bound} (aka ELBO) that one aims to maximize to get the $\lambda$ values. So, the optimal variational distribution satisfies
 \begin{equation}
 q(z;\lambda^\ast) = \underset{q(z;\lambda)}{\mathrm{argmax}}\  \mathtt{ELBO} = 
 \underset{\lambda}{\mathrm{argmin}}\ \mathcal{L}(\lambda)
@@ -266,12 +266,12 @@ p(\xi,\mathcal{D}) \bydef p(T^{-1}(\xi),\mathcal{D}) |J_{T^{-1}}(\xi)|
 \end{equation}
 which exhibit the Jacobian of the $T^{-1}$ transformation. The main advantage of this reparametrisation is that the minimization can be performed with no bound constraints. 
 
-Now, one is faced with the evaluation of the expectations during gradient descent. The solution is to use what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \citep{2015arXiv150603431K}). Let us illustrate the trick in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ ($\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobien of this distribution is 1, so the cost function reads
+Now, one is faced with the evaluation of the expectations during gradient descent. The solution is to use what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \citep{2015arXiv150603431K}). Let us illustrate the trick in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
 \begin{multline}
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\eta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
 \label{eq-loss-svi-3}
 \end{multline}
-where $\mathbb{H}(q)$ is the Shannon entropy of the Gaussian distribution which is independent of the model, so its gradient can be computed once for all and reused in user model. Then,
+where $\mathbb{H}(q)$ is the Shannon entropy of the MVN distribution which is independent of the model, so its gradient can be computed once for all and reused in any user model. Then,
 to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the expectation which leads to
 \begin{multline}
 -\nabla_\lambda\mathcal{L}(\lambda) = \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
@@ -296,7 +296,7 @@ The expectations used in the above expressions are computed with $\zeta$ i.i.d s
 %
 \subsection{Hamiltonian Monte Carlo}
 
-\subsubsection{Introduction}
+\subsubsection{Vanilla HMC}
 
 % Show Joe's vanilla HMC results against Cobaya
 Hamiltonian Monte Carlo (HMC) is an MCMC-type method particularly suited to drawing
@@ -304,20 +304,24 @@ samples from high dimensional parameter spaces.  It was introduced in \citep{198
 and developed extensively since.  See \citet{betancourt} for a full review; we describe
 very basic features here.
 
-HMC samples spaces by generating particle tracjectories through the space, using the log-posterior
-as the negative potential energy of a particle at each point $q$ in the space.  At each sample a trajectory are initialized
-with a random momentum $p$, and then integrated using Hamilton's equations with a numerical integration:
+HMC samples spaces by generating particle trajectories through the space, using the log-posterior as the negative potential energy of a particle at each point $q$ in the space. Associated to $q$, we introduce an auxiliary $p$ variable in the spirit of Hamiltonian momentum such that
+\begin{equation}
+- \log{\cal P}(q) = V(q) + cte; \quad H(q,p) = V(q) + U(p)
+\end{equation}
+where $U(p)$ is a sort of \textit{kinetic} term defined by 
+\begin{equation}
+U(p) = p^T M^{-1} p
+\end{equation}
+At each sample, a trajectory is initialized with a random momentum $p$, and then integrated using Hamilton's equations with a numerical integration (so called \textit{leapfrog} algorithm):
 \begin{align}
 \frac{\mathrm{d}p}{\mathrm{d}t} &= - \frac{\partial V}{\mathrm{d} q} = \frac{\partial \log{\cal P}}{\mathrm{d} q}\\
 \frac{\mathrm{d}q}{\mathrm{d}t} &= + \frac{\partial U}{\mathrm{d} p} = M^{-1} p
 \end{align}
-where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also
-used to set the scale of the random initial velocities.
+where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also used to set the scale of the random initial velocities.
 
 Formally, the set of $n_\mathrm{dim}$ moment are treated as new parameters, and after 
 some number of integration steps a final point in the trajectory is compared to the initial one,
-and a Metropolis-Hastings acceptance criterion on the total energy $H = p^T M^{-1} p + \log{\cal P}(q)$ is applied.
-If the trajectory is perfectly simulation then this acceptance is unity, since energy is conserved; applying it allows
+and a Metropolis-Hastings acceptance criterion on the total energy $H(q,p)$ is applied. If the trajectory is perfectly simulation then this acceptance is unity, since energy is conserved; applying it allows
 a relaxation to the integration accuracy.
 
 That gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing,
@@ -325,32 +329,34 @@ but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluati
 in high dimension, and as with the Fisher forecasting is highly prone to numerical error. Automatically
 calculating a Hessian, as in \jaxcosmo, makes it feasible and efficient.
 
-Below we show an example set of HMC constraints using \jaxcosmo\ to constrain a simulated
-Dark Energy Survey Year One (DES-Y1) lensing and clustering-like (3x2pt) likelihood, using 21 parameters\footnote{We omit the 
-five clustering sample photometric redshift parameters}.  We re-parametrize the space to unit mass using the Cholesky 
-decomposition
-of the covariance as estimated with an initial Fisher matrix; this lets us reflect the trajectories when they reach the
-edge of the parameter space, as recommended in \citep{NIPS2015_8303a79b}.  We use a fixed number (25) of integration steps and 
-a fixed integration period (0.02), this was chosen heuristically to give a reasonable acceptance rate, but is likely to be
-far from optimal.  We compare to the highly-optimized \texttt{Cobaya} 
-Metropolis-Hastings implementation  %\citep{cobaya2,cobaya1} JEC it may preferable to have a single up to date reference in JCAP
-\citep{2019ascl.soft10019T,2021JCAP...05..057T}, initializing it with the Fisher matrix as a proposal and
-tuning thereafter.  We ran two processes for each sampler, with four CPU threads per process.
+The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the number of steps as well as the step size of integration. The next section addresses this problem thanks to the No-U-Turn HMC version.
 
-The Hamiltonian sampler required around half the number of samples as the Metropolis (70,000 vs 140,000) to reach approximately the same
-convergence, as tested by the Gelman-Rubin test \citep{gelman}, though each sample was itself a few times slower
-on a CPU.  This proof-of-principle example can certainly be hugely improved using various extensions to HMC such as No U-Turn Sampling \citep{nuts} or sampling from the entire trajectories \cite{betancourt}.  On next generation GPU high-performance systems, the advantage will be large.
-
-\begin{figure}
-\includegraphics[width=0.95\columnwidth]{figures/hmc.pdf}
-\caption{Constraints on three of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using a simple Hamiltonian
-Monte Carlo sampler with \jaxcosmo\ (blue), compared to the \texttt{Cobaya} Metropolis-Hastings sampler (orange).}
-\end{figure}
-
-
-We note that a full Boltzmann code accurate enough to calculate the CMB spectra to Planck \citep{planck18}
-or future \citep{s4,simons} accuracy is currently beyond the scope of this project.  
-If this is needed then HMC could use a fast approximation to a CMB theory spectrum, and importance sampling applied to the complete chain.
+%Below we show an example set of HMC constraints using \jaxcosmo\ to constrain a simulated
+%Dark Energy Survey Year One (DES-Y1) lensing and clustering-like (3x2pt) likelihood, using 21 parameters\footnote{We omit the 
+%five clustering sample photometric redshift parameters}.  We re-parametrize the space to unit mass using the Cholesky 
+%decomposition
+%of the covariance as estimated with an initial Fisher matrix; this lets us reflect the trajectories when they reach the
+%edge of the parameter space, as recommended in \citep{NIPS2015_8303a79b}.  We use a fixed number (25) of integration steps and 
+%a fixed integration period (0.02), this was chosen heuristically to give a reasonable acceptance rate, but is likely to be
+%far from optimal.  We compare to the highly-optimized \texttt{Cobaya} 
+%Metropolis-Hastings implementation  %\citep{cobaya2,cobaya1} JEC it may preferable to have a single up to date reference in JCAP
+%\citep{2019ascl.soft10019T,2021JCAP...05..057T}, initializing it with the Fisher matrix as a proposal and
+%tuning thereafter.  We ran two processes for each sampler, with four CPU threads per process.
+%
+%The Hamiltonian sampler required around half the number of samples as the Metropolis (70,000 vs 140,000) to reach approximately the same
+%convergence, as tested by the Gelman-Rubin test \citep{gelman}, though each sample was itself a few times slower
+%on a CPU.  This proof-of-principle example can certainly be hugely improved using various extensions to HMC such as No U-Turn Sampling \citep{nuts} or sampling from the entire trajectories \cite{betancourt}.  On next generation GPU high-performance systems, the advantage will be large.
+%
+%\begin{figure}
+%\includegraphics[width=0.95\columnwidth]{figures/hmc.pdf}
+%\caption{Constraints on three of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using a simple Hamiltonian
+%Monte Carlo sampler with \jaxcosmo\ (blue), compared to the \texttt{Cobaya} Metropolis-Hastings sampler (orange).}
+%\end{figure}
+%
+%
+%We note that a full Boltzmann code accurate enough to calculate the CMB spectra to Planck \citep{planck18}
+%or future \citep{s4,simons} accuracy is currently beyond the scope of this project.  
+%If this is needed then HMC could use a fast approximation to a CMB theory spectrum, and importance sampling applied to the complete chain.
 
 \subsubsection{NUTS}
 \label{sec-NUTS}
@@ -360,18 +366,26 @@ If this is needed then HMC could use a fast approximation to a CMB theory spectr
 
 The No-U-Turn (aka NUTS))  variant of the traditional HMC sampler has been introduced in reference \citep{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. So, in a automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls a each generation.
 
-Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class. So, We have setup \texttt{NUTS} sampler Using the same DES-Y1 modeling as in previous section, with 
+Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class.  After the forward model creation for the DES-Y1 3x2pts exercise described in \ref{app-DESY1}, we have performed 
 \begin{itemize}
     \item first a reparametrisation of the latent variable uniform priors (Tab.~\ref{tab-DESY1}) to use a unified uniform prior $\mathcal{U}[-5,5]$;
     \item second for the warm-up phase we ask for mass matrix optimisation with essentially a diagonal form but with a block structure for the following sets of parameters $(\Omega_b,\Omega_c,\sigma_8,w_0,h)$ and $(b_i)_{i:1\dots5}$. This matrix structuring is motivated by the expected degree of correlation of the concerned parameters as can be shown for instance in figure \ref{fig_svi_nuts_4}.
 \end{itemize}
 We have setup a NUTS sampling using 16 chains of 1,000 samples each (\texttt{vectorized} option) after a warm-up phase consisting of 200 samples and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). The job has been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or NVidia V100 (32GB RAM) at the CCIN2P3 Center.
 
-The results in terms of sampling efficiency are detailed in Tab.~\ref{tab-ESS-NUTS_SVI-1}. The confidential level iso-contours are all in agreement with the \texttt{Cobaya} sampler and are reported as the blue curves in figures presented in section \ref{sec-Neural-Reparametrisation}. It is worth to point out that the mass matrix structuring is a very effective when NUTS is run stand-alone as it increases the sampling efficiency by about a factor 2.  The elapse time was 20 hours for the default setting (\texttt{max\_tree\_depth=7}). Anticipating the section \ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective alternative, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Tab.~\ref{tab-ESS-NUTS_SVI-1}), so the user is highly encouraged to tune this critical parameter. 
+The results in terms of sampling efficiency are detailed in Tab.~\ref{tab-ESS-NUTS_SVI-1}. The confidential level iso-contours are all in agreement with the highly-optimized \texttt{Cobaya} 
+Metropolis-Hastings implementation  
+%\citep{cobaya2,cobaya1} JEC it may preferable to have a single up to date reference in JCAP
+\citep{2019ascl.soft10019T,2021JCAP...05..057T} (see figure \ref{fig_cobaya_NUTS_SVI}). It is worth to point out that the mass matrix structuring is a very effective when NUTS is run stand-alone as it increases the sampling efficiency by about a factor 2.  The elapse time was 20 hours for the default setting (\texttt{max\_tree\_depth=7}). Anticipating the section \ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective alternative, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Tab.~\ref{tab-ESS-NUTS_SVI-1}), so the user is highly encouraged to tune this critical parameter. 
  
 %  JEC: the 16 chains X 1000 (max_tree_depth=7) is the run done by Francois. 20 heures sur un GPU TitanXp avec 12 GB de ram 
 % 5h sur V100 10 chains x 1000 (max_tree_depth=5)
 
+\begin{figure}
+\includegraphics[width=\columnwidth]{figures/Cobaya-NUTS-SVI.pdf}
+\caption{Constraints (30\%, 68\%, 90\%) on 4 of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using the \texttt{Cobaya} Metropolis-Hastings sampler (full curve in blue), the  NUTS sampling described in section \ref{sec-NUTS} (dashed curve in red), and a SVI MVN optimisation followed by a Naural Transport parametrisation to run a NUTS sampling (dashed-dotted curve in green).}
+\label{fig_cobaya_NUTS_SVI}
+\end{figure}
 %
 \subsubsection{Neural Transport}
 \label{sec-Neural-Reparametrisation}
@@ -382,23 +396,23 @@ q(z;\lambda) \rightarrow q(\zeta;\lambda) \bydef q(F_\lambda(\zeta)) |J_{F_\lamb
 \end{equation}
 which is evaluated with optimal $\lambda^\ast$ according to maximization of the ELBO (eg. $F_\lambda=T^{-1}\circ S^{-1}_\lambda$). So, one can use a HMC sampler (eg. NUTS) based on $p(\zeta;\mathcal{D})$ distribution, initialized with $\zeta$ samples from $q(\zeta;\lambda^\ast)$, to get a Markov Chain of $N$ samples $(\zeta_i)_{i<N}$. Then, from the transformation  $z_i=F_{\lambda^\ast}(\zeta_i)$ one finally obtain a Marcov Chain with $(z_i)_{i<N}$ samples. The method is accessible throw the \verb|NeuTraReparam| in \numpyro\ library.
 
-\begin{figure}
-\includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x200.pdf}
-\caption{Constraints (30\%, 68\%, 90\%) on 4 of the 22 parameters of a simulated DES-Y1 3x2pt likelihood, in blue the NUTS sampling described in section \ref{sec-NUTS}, and in orange a SVI MVN optimisation followed by a Naural Transport parametrisation to run a NUTS sampling (1 chain of 200 warm followed by 200 samples; a dense mass matrix and \texttt{max\_tree\_depth} parameter set to 5).}
-\label{fig_svi_nuts_1}
-\end{figure}
+%\begin{figure}
+%\includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x200.pdf}
+%\caption{Constraints (30\%, 68\%, 90\%) on 4 of the 22 parameters of a simulated DES-Y1 3x2pt likelihood, in blue the NUTS sampling described in section \ref{sec-NUTS}, and in orange a SVI MVN optimisation followed by a Naural Transport parametrisation to run a NUTS sampling (1 chain of 200 warm followed by 200 samples; a dense mass matrix and \texttt{max\_tree\_depth} parameter set to 5).}
+%\label{fig_svi_nuts_1}
+%\end{figure}
 
-\begin{figure}
-\includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x1000.pdf}
-\caption{Same as Fig.~\ref{fig_svi_nuts_1} but with 1 chain of 200 warm followed by 1000 samples for the NUTS sampler after SVI optimization.}
-\label{fig_svi_nuts_2}
-\end{figure}
-
-\begin{figure}
-\includegraphics[width=\columnwidth]{figures/SVI_NUTS_10x200x1000.pdf}
-\caption{Same as Fig.~\ref{fig_svi_nuts_1} but with 10 chains of 200 warm followed by 1000 samples for the NUTS sampler (\texttt{max\_tree\_depth=5}) after SVI optimization.}
-\label{fig_svi_nuts_3}
-\end{figure}
+%\begin{figure}
+%\includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x1000.pdf}
+%\caption{Same as Fig.~\ref{fig_svi_nuts_1} but with 1 chain of 200 warm followed by 1000 samples for the NUTS sampler after SVI optimization.}
+%\label{fig_svi_nuts_2}
+%\end{figure}
+%
+%\begin{figure}
+%\includegraphics[width=\columnwidth]{figures/SVI_NUTS_10x200x1000.pdf}
+%\caption{Same as Fig.~\ref{fig_svi_nuts_1} but with 10 chains of 200 warm followed by 1000 samples for the NUTS sampler (\texttt{max\_tree\_depth=5}) after SVI optimization.}
+%\label{fig_svi_nuts_3}
+%\end{figure}
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x200_bis.pdf}
@@ -460,9 +474,8 @@ So, the authors think that it is worth considering methods like HMC/NUTS that by
 
 %
 %
-\subsubsection{DES-Y1 Example}
+\subsection{DES-Y1 Example}
 %
-
 
 
 %% The Appendices part is started with the command \appendix;
@@ -472,7 +485,7 @@ So, the authors think that it is worth considering methods like HMC/NUTS that by
 \section{Description of the DES-Y1}
 \label{app-DESY1}
 \begin{table}[htb]
-\caption{Priors of the 22 variables of the DES-Y1 of the 3x2pt likelihood (number counts and shear).}
+\caption{Priors of the 21 variables of the DES-Y1 of the 3x2pt likelihood (number counts and shear).}
 \label{tab-DESY1}
  \centering
 \begin{tabular}{ccccccccccc}
