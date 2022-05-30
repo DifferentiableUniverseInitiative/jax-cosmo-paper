@@ -150,34 +150,56 @@ In this context we have developed the \texttt{jax-cosmo} library available on Gi
 
 \section{Modeling and implementation}
 \label{sec-jaxcosmo-design}
-In this section, we describe the cosmological modeling provided by jax-cosmo, and its implementation in JAX.
+In this section, we describe the cosmological modeling provided by \jaxcosmo, and its implementation in JAX. The general development follows the Core Cosmology Library structure \citep{2019ApJS..242....2C} although it does not include all the options as the present \jaxcosmo\ version is more to be viewed as a proof of concept.
+
+The cosmological parameters are organised in a JAX \textit{pyTree} container\footnote{\url{https://jax.readthedocs.io/en/latest/jax-101/05.1-pytrees.html}} which allows one to use \textit{autodiff} and \texttt{vmap} transparently. The present choice of parameters are: $\Omega_{cdm}$ the cold dark matter density fraction, $\Omega_b$ the Byronic matter density fraction, $h$ the Hubble constant divided by $100$~km/s/Mpc, $n_s$ the primordial scalar perturbation spectral index, $\sigma_8$ the variance of matter density perturbations at an $8$~Mpc/h scale, $\Omega_k$ the curvature density fraction, $w_0$ the first order term of dark energy equation and $w_a$ the second order term of dark energy equation of state. 
+
+The traditional computation of the different cosmological background follows \cite{2005A&A...443..819P}  with namely the Friedmann equation
+\begin{equation}
+    E^2(a) = \frac{H^2(a)}{H^2_0} = \Omega_m a^{-3} + \Omega_k a^{-2} + \Omega_{de} e^{f(a)}
+\end{equation}
+with $a=1/(1+z)$ the scale factor related to the redshift $z$, $H(a)=\dot{a}/a$ the Hubble parameter with $H_0$ its present day value, $\Omega_m= \Omega_{cdm}+\Omega_b$, $\Omega_{de}=1-\Omega_k-\Omega_m$, and 
+\begin{equation}
+    f(a) = -3 (1 + w_0 + w_a) \ln(a) + 3 w_a (a - 1)
+\end{equation}
+Noticeably, the relativist contributions of massless neutrinos and photon radiations, as well as the massive neutrino contribution are neglected.
+
+Currently, \jaxcosmo\  implements the \cite{Eisenstein_1998} transfer function and non-linear features through the \textit{halofit} model by \cite{2012ApJ...761..152T} or \cite{2003MNRAS.341.1311S} (w/o the neutrino contribution introduced by \cite{10.1111/j.1365-2966.2011.20222.x}). It is worth to mention that to perform \textit{autodiff} we have implemented a series of tools as differentiable ODE (Romberg algorithm) as well as integration quadrature (eg. Simpson).
+
+Future version of the library would offer the possibility to call a JAX emulator of the Cosmic Linear Anisotropy Solving System \citep{2011JCAP...07..034B}.
+
+To make the bridge with observations, two pytrees are introduced, namely \texttt{NumberCounts} and \texttt{WeakLensing} tracers for galaxy clustering and weak lensing  respectively,  with for each probe a bunch of redshift bins. A long this line, the angular power spectra $C_\ell^{pq}(z,z^\prime)$ for the probes $(p,q)$ and for redshift bin window selections $(N(z), N(z^\prime))$ are computed in the Limber approximation. 
+Remarkably, all the integral involved in the computation can be easily differentiated with respect to the cosmological parameters thanks to \textit{autodif} and the implementation of the above mentioned integration quadrature.  An example is given in the context of DES Y1 3x2pts analysis (\ref{app-DESY1}).
+
+
+
 
 % Explain how the code is structured, mention some tricks of autodiff if we have some
 % Follows a bit the structure of the CCL library
 
 
 
-\subsection{Background cosmology}
+%\subsection{Background cosmology}
 % Usual stuff
 
 
-\subsection{Growth of perturbations}
+%\subsection{Growth of perturbations}
 % The interesting point to mention here is the differentiable growth ODE
 
 
-\subsection{Matter power spectrum}
+%\subsection{Matter power spectrum}
 % Here we describe the EH power spectrum, mention possible extensions with emulators
 
 
-\subsection{Tracers}
+%\subsection{Tracers}
 % Here we describe the kernels, like in CCL
 
 
-\subsection{Angular power-spectra}
+%\subsection{Angular power-spectra}
 % Limber integration, this can be an opportunity to talk about differentiation through integrals as well.
 
 %
-\subsection{Validation against the Core Cosmology Library (CCL)}
+%\subsection{Validation against the Core Cosmology Library (CCL)}
 To illustrate the different features available with the present version of the library, we have written a  notebook to make  comparison with the well established  Core Cosmology Library \citep{2019ApJS..242....2C}. As an example, the Figure \ref{fig:halofit_comparison} shows an example of the non linear matter power spectrum computation using the \texttt{halofit} fitting function \citep{2012ApJ...761..152T, 2003MNRAS.341.1311S}. 
 %
 \begin{figure}[ht]
@@ -535,6 +557,11 @@ Omega_c = numpyro.sample('Omega_c', Uniform(0.1, 0.9))
 \end{minted}
 Then, we generate mock angular power spectra $C_\ell$ from the auto \& cross correlations of the Number Counts and Weak Lensing probes computed with the \texttt{gaussian\_cl\_covariance\_and\_mean} function in the \texttt{jc.angular\_cl} module. One reads
 \begin{minted}[fontsize=\footnotesize]{python}
+# Define the lensing and number counts probe
+    probes = [jc.probes.WeakLensing(nzs_s_sys, 
+                                    ia_bias=b_ia,
+                       multiplicative_bias=m),
+             jc.probes.NumberCounts(nzs_l, b)]
 cl, C = gaussian_cl_covariance_and_mean(cosmo, ell, probes, 
                                f_sky=0.25, sparse=True)
 \end{minted} 
