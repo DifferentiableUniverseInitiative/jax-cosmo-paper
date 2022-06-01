@@ -164,7 +164,7 @@ with $a=1/(1+z)$ the scale factor related to the redshift $z$, $H(a)=\dot{a}/a$ 
 \end{equation}
 Noticeably, the relativist contributions of massless neutrinos and photon radiations, as well as the massive neutrino contribution are neglected.
 
-Currently, \jaxcosmo\  implements the \cite{Eisenstein_1998} transfer function and non-linear features through the \textit{halofit} model by \cite{2012ApJ...761..152T} or \cite{2003MNRAS.341.1311S} (w/o the neutrino contribution introduced by \cite{10.1111/j.1365-2966.2011.20222.x}). It is worth to mention that to perform \textit{autodiff} we have implemented a series of tools as differentiable ODE (Romberg algorithm) as well as integration quadrature (eg. Simpson).
+Currently, \jaxcosmo\  implements the \cite{Eisenstein_1998} transfer function and non-linear features through the \textit{halofit} model by \cite{2012ApJ...761..152T} or \cite{2003MNRAS.341.1311S} without the neutrino contribution introduced by \cite{10.1111/j.1365-2966.2011.20222.x}. No baryonic feedback is considered yet. It is worth to mention that to perform \textit{autodiff} we have implemented a series of tools as differentiable ODE via Runge-Kutta as well as integration methods as Simpson quadrature and Romberg algorithm.
 
 Future version of the library would offer the possibility to call a JAX emulator of the Cosmic Linear Anisotropy Solving System \citep{2011JCAP...07..034B}.
 
