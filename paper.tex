@@ -551,7 +551,7 @@ $dz_4$ & $\mathcal{N}[-0.018,0.022]$ \\
 \end{table}
 
 
-Then, using the \numpyro\ PPL, we have set up a \textit{forward model} using the prior description  Table \ref{tab-DESY1} as for instance the $\Omega_c$ parameter
+Then, using the \numpyro\ PPL, we have set up a \textit{forward model} following the reference \citep{2018PhRvD..98d3526A}. The prior descriptions of the different model parameters are described in Table \ref{tab-DESY1}.  For instance the $\Omega_c$ parameter is treated as random variable as followed
 \begin{minted}[fontsize=\footnotesize]{python}
 Omega_c = numpyro.sample('Omega_c', Uniform(0.1, 0.9))
 \end{minted}
