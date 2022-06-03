@@ -565,7 +565,7 @@ Then, we generate mock angular power spectra $C_\ell$ from the auto \& cross cor
 cl, C = gaussian_cl_covariance_and_mean(cosmo, ell, probes, 
                                f_sky=0.25, sparse=True)
 \end{minted} 
-with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} a series of 50 angular modes. The generation of the mock data yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
+with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
 \begin{minted}[fontsize=\footnotesize]{python}
 fiducial_model = condition(model,
     {'Omega_c':0.2545, 'sigma8':0.801, 
@@ -579,14 +579,14 @@ fiducial_model = condition(model,
 with seed(rng_seed=42):
     data, P, C = fiducial_model()
 \end{minted}
-The \textit{inference model} looks very similar to the \textit{forward model} excepts that first we fix the angular power spectra covariance matrix $C$ (and its inverse $P$) and secondly we let \numpyro\ generates the model $C_\ell$ from the priors
+The \textit{inference model} looks very similar to the \textit{forward model} excepts that first we fix the angular power spectra covariance matrix $C$ (and its inverse $P$) and secondly we let \numpyro\ generates the model $C_{\ell}$ from the priors
 \begin{minted}[fontsize=\footnotesize]{python}
 cl = jc.angular_cl.angular_cl(cosmo, ell, probes).flatten()
 return numpyro.sample('cl', MultivariateNormal(cl, 
                             precision_matrix=P,
                             covariance_matrix=C))
 \end{minted}
-These model $C_\ell$ are then conditioned by the mock $C_ell$ as followed
+These theoretical $C_{\ell}$ are in turn conditioned by the mock $C_\ell$ as followed
 \begin{minted}[fontsize=\footnotesize]{python}
 observed_model = condition(model, {'cl': data})
 \end{minted}
