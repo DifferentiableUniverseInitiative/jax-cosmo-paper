@@ -107,7 +107,7 @@
 \address{}
 
 \begin{abstract}
-With \jaxcosmo, Fisher forecasts are accurate and instantaneous, inference is lightning-fast, survey optimization is trivial. \github
+The recent JAX library creates a new  ecosystem in which the developments of probabilistic programming software take benefit of the attractive speed up as batch acceleration, Just-In-Time compilation and optimization of code for different hardware (CPU, GPU, TPU). The JAX automatic differentiation mechanism makes more robust algorithms used in probability density sampling, eg. Hamiltonian like Monte Carlo as well as Variotional Inference. The current development of Bayesian Inference (with of without likelihood) with large data sets in Cosmology rises the opportunity to develop the \texttt{jax-cosmo} library \github. The current version allows to compute linear and non linear power spectra (\texttt{halofit}) with Eisenstein and Hu transfer function, as well as angular power spectra ($C_\ell$) in Limber approximation for galaxy and weak lensing probes. The comparison with the Core Cosmological Library is exposed. Then, we have conducted in the context of DES Y1 3x2pts analysis a series of cosmological parameters as well as nuisance parameters estimations using different MCMC methods using \numpyro\ as PPL framework. The mathematical background of the different methods is detailed. As result of the numerical experiments, We show a clear improvement using HMC compared to Metreoplosis-Hasting generation and that the Normalizing Flows using the Neutral Transport is very effective in the early phases of Bayesian model development. 
 \end{abstract}
 
 %%Graphical abstract
@@ -142,7 +142,7 @@ Monte Carlo Markov Chain Bayesian inference has been widely used in Cosmology si
 
 Even if the above mentioned MCMC packages are widely used and are very valuable, they do not take benefit of recent advance in automatic differentiation (aka \textit{autodiff}) \citep{2015arXiv150205767G, 2018arXiv181105031M} which is widely used in neural network optimization and more generally for machine learning and computational statistics as for instance Hamiltonian Monte Carlo sampling and Variational Inference, two subjects covered in this paper. The \textit{autodiff} has been implemented in widely used libraries as for instance \texttt{Stan}\footnote{\url{https://mc-stan.org/users/documentation}} \citep{JSSv076i01} and \texttt{TensorFlow}\footnote{\url{https://www.tensorflow.org/}}  \citep{tensorflow2015-whitepaper} or \texttt{PyTorch}\footnote{\url{https://pytorch.org/docs/}} \citep{NEURIPS2019_9015}. 
 
-Recently, the \texttt{JAX} library\footnote{\url{https://jax.readthedocs.io}} \citep{jax2018github} brings a rapid rise as it can automatically differentiate native \texttt{Python} and \texttt{NumPy} functions which is quite attractive to speed up the learning process. \texttt{JAX} offers an easy parallelization mechanism (\texttt{vmap}), the Just-In-Time compilation (\texttt{jit}) and optimization code for CPU, GPU and TPU hardware thanks to \texttt{XLA}\footnote{\url{https://www.tensorflow.org/xla}} which overall make this new library very attractive. Besides the fact that it contains dedicated packages as \texttt{jax.numpy} and \texttt{jax.scipy} which are not simple wrapping, as well as example libraries as \texttt{Stax} for simple but flexible neural network development, it has been the seed for an ecosystem\footnote{A more exhaustive list can be consulted at the following Web site \url{https://project-awesome.org/n2cholas/awesome-jax}.} which is rapidly growing. We can list some libraries that the authors have already used as \texttt{Flax}\footnote{\url{https://flax.readthedocs.io/}} \citep{flax2020github} a high-performance neural network library, \numpyro\footnote{\url{https://num.pyro.ai}} \citep{phan2019composable,bingham2019pyro} a probabilistic programming language that is used in this paper, \texttt{JAXopt}\footnote{\url{https://jaxopt.github.io}} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable optimizers, \texttt{Optax}\footnote{\url{https://optax.readthedocs.io}} \citep{optax2020github} a gradient processing and optimization library.
+Recently, the \texttt{JAX} library\footnote{\url{https://jax.readthedocs.io}} \citep{jax2018github} brings a rapid rise as it can automatically differentiate native \texttt{Python} and \texttt{NumPy} functions which is quite attractive to speed up the learning process. \texttt{JAX} offers an easy parallelization mechanism (\texttt{vmap}), the Just-In-Time compilation (\texttt{jit}) and optimization code for CPU, GPU and TPU hardware thanks to \texttt{XLA}\footnote{\url{https://www.tensorflow.org/xla}} which overall make this new library very attractive. Besides the fact that it contains dedicated packages as \texttt{jax.numpy} and \texttt{jax.scipy} which are not simple wrapping, as well as example libraries as \texttt{Stax} for simple but flexible neural network development, it has been the seed for an ecosystem\footnote{A more exhaustive list can be consulted at the following Web site \url{https://project-awesome.org/n2cholas/awesome-jax}.} which is rapidly growing. We can list some libraries that the authors have already used as \texttt{Flax}\footnote{\url{https://flax.readthedocs.io/}} \citep{flax2020github} a high-performance neural network library, \texttt{JAXopt}\footnote{\url{https://jaxopt.github.io}} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable optimizers, \texttt{Optax}\footnote{\url{https://optax.readthedocs.io}} \citep{optax2020github} a gradient processing and optimization library,  \numpyro\footnote{\url{https://num.pyro.ai}} \citep{phan2019composable,bingham2019pyro} a probabilistic programming language (PPL) that is used in this paper. Notice also that other PPL softwares have switched to JAX backend as for instance the latest \texttt{PyMC} v4.0.1\footnote{\url{https://www.pymc.io/projects/docs/en/stable/installation.html}}. 
 
 In this context we have developed the \texttt{jax-cosmo} library available on GitHub repository \github\footnote{ \url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}} described in section \ref{sec-jaxcosmo-design}. We show how to use this library in different use-cases as rapid and numerically stable Fisher forecasts (Sec.~\ref{sec-fisher-forecast}), optimisation strategy as in the LSST-DESC 3x2pt tomography optimization challenge \citep{2021OJAp....4E..13Z} (Sec.~\ref{sec-FOM-optimisation}), and more advanced gradient-based cosmological inference with Stochastic Variational Inference (Sec.~\ref{sec-SVI}) as well as Hamiltonian Monte carlo and its variant No-U-Turn (Sec.\ref{sec-NUTS}) and a mixture of these methods detailed in section \ref{sec-Neural-Reparametrisation}.
 
@@ -504,9 +504,22 @@ So, the authors think that it is worth considering methods like HMC/NUTS that by
 %
 \subsection{DES-Y1 Example}
 %
+
+%%%
+
+{\color{red} the next sections are written along the model of \url{https://www.sciencedirect.com/science/article/pii/S2213133722000373} in Astronomy and Computing}
+%%%
+\section*{CRediT authorship contribution statement}
+\textbf{F. Lanusse}, \textbf{J. Zuntz}...
+\textbf{J.E Campagne} Conceptualization, Methodology, Software, Validation, Writing.
+
+\section*{Declaration of Competing Interest}
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
 %\Acknowledgements
 \section*{Acknowledgements}
 Some of the numerical experiments have been conducted at the IN2P3 Computing Center (CC-IN2P3 - Lyon/Villeurbanne - France) funded by the Centre National de la Recherche Scientifique.
+
 
 %% The Appendices part is started with the command \appendix;
 %% appendix sections are then done as normal sections
