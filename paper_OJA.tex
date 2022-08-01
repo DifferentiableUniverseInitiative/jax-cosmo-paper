@@ -1,53 +1,24 @@
-%\documentclass[10pt,onecolumn,preprintnumbers,amsmath,amssymb,
-%nofootinbib,superscriptaddress,aps,prd,numberedappendix]{openjournal}
-
-\RequirePackage{rotating}
 \PassOptionsToPackage{usenames,dvipsnames}{xcolour}
-\documentclass[twocolumn,twocolappendix,nofootinbib]{openjournal}
+\documentclass[twocolumn,twocolappendix,nofootinbib,iop]{openjournal}
 
 % Add your own macros here:
 \pdfoutput=1 %for arXiv submission
-%\usepackage{amsmath,amssymb,amstext}
-\usepackage{amsmath,amstext}
+\usepackage{amsmath,amssymb,amstext}
 \usepackage[T1]{fontenc}
 \usepackage{apjfonts}
 \usepackage{ae,aecompl}
 \usepackage[utf8]{inputenc}
-\usepackage{hyperref}
+%\usepackage{hyperref}
+\usepackage[colorlinks,allcolors=blue]{hyperref}
 \usepackage[figure,figure*]{hypcap}
 \usepackage{natbib}
 \usepackage{url}
 \usepackage{mdwlist}
-%\usepackage{rotating}
 \usepackage{multirow}
 \urlstyle{same}
-
 \usepackage{lineno}
+\usepackage{fontawesome}
 
-%\documentclass[twocolumn,iop]{openjournal}
-%\usepackage{newtxtext,newtxmath}
-%\usepackage{amsmath}
-%\usepackage{amssymb}
-%\usepackage{graphicx}
-%\usepackage{dcolumn}
-%\usepackage{bm}
-%\usepackage[dvipsnames]{xcolor}
-%\usepackage{xspace}
-%\usepackage{ulem}
-%% The amssymb package provides various useful mathematical symbols
-
-%\usepackage{fontawesome}
-%% The lineno packages adds line numbers. Start line numbering with
-%% \begin{linenumbers}, end it with \end{linenumbers}. Or switch it on
-%% for the whole article with \linenumbers.
-%% \usepackage{lineno}
-
-%\definecolor{xlinkcolor}{cmyk}{1,1,0,0}
-%\usepackage[colorlinks = true,
-%            linkcolor = xlinkcolor,
-%            urlcolor  = xlinkcolor,
-%            citecolor = xlinkcolor,
-%            anchorcolor = xlinkcolor]{hyperref}
 
 
 %%%% usepackage{minted}
@@ -62,6 +33,7 @@
 \definecolor{ipython_purple}{RGB}{170, 34, 255}
 
 \usepackage{listings}
+
 
 \lstset{
     breaklines=true,
@@ -128,6 +100,7 @@
     {=}{{{\color{ipython_purple}=}}}1
     %
     {+}{{{\color{ipython_purple}+}}}1
+    {-}{{{\color{ipython_purple}-}}}1
     {*}{{{\color{ipython_purple}$^\ast$}}}1
     {/}{{{\color{ipython_purple}/}}}1
     %
@@ -147,16 +120,16 @@
     showstringspaces=false,
     %
     rulecolor=\color{ipython_frame},
-    frame=none,
     frameround={t}{t}{t}{t},
-    framexleftmargin=6mm,
     numbers=none,
     numberstyle=\tiny\color{halfgray},
     %
     %
     backgroundcolor=\color{ipython_bg},
     %   extendedchars=true,
-    basicstyle=\scriptsize,
+    %basicstyle=\scriptsize,
+    basicstyle=\ttfamily\footnotesize,
+    columns=fullflexible,
     keywordstyle=\color{ipython_green}\ttfamily,
 }
 
@@ -165,7 +138,8 @@
 \newcommand{\nblink}[1]{\href{https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper/blob/master/notebooks/#1.ipynb}{\faFileCodeO}}
 \newcommand{\github}{\href{https://github.com/DifferentiableUniverseInitiative/jax\_cosmo}{\faGithub}}
 
-\newcommand{\FLan}[1]{{\color{cyan}FLan: #1}}
+%%% color Comments 
+\newcommand{\FrL}[1]{{\color{cyan}FL: #1}}
 
 %%%% new command (JEC)
 \newcommand{\nn}{\nonumber}
@@ -174,9 +148,10 @@
 \newcommand{\jaxcosmo}{\texttt{jax-cosmo}}
 
 
+
 \begin{document}
 \journalinfo{The Open Journal of Astrophysics}
-\submitted{submitted xxx, revised yyy, accepted zzz}
+%\submitted{submitted xxx, revised yyy, accepted zzz}
 
 
 \title{\jaxcosmo: An End-to-End Differentiable and GPU Accelerated Cosmology Library}
@@ -193,7 +168,7 @@ J. Zuntz$^3$,\\
 \jaxcosmo\ contributors}
 \thanks{$^\ast$jean-eric.campagne@ijclab.in2p3.fr}
 
-\affiliation{$^1$Universit́e Paris-Saclay, CNRS/IN2P3, IJCLab, 91405 Orsay, France}
+\affiliation{$^1$Université Paris-Saclay, CNRS/IN2P3, IJCLab, 91405 Orsay, France}
 
 \date{\today}
 
@@ -203,7 +178,8 @@ The recent JAX library has created a new ecosystem from which probabilistic prog
 To take advantage of these possibilities within cosmology we have developed the \texttt{jax-cosmo} library, which implements background evolution, linear and non linear power spectra (using \texttt{halofit} or the Eisenstein and Hu transfer function), as well as angular power spectra ($C_\ell$) with the Limber approximation for galaxy and weak lensing probes. We discuss algorithms made possible by this library, and present comparisons with the Core Cosmology Library as a benchmark, and run a series of tests using the Dark Energy Survey Year 1 3x2pt analysis with the \numpyro\ library to demonstrate practical usage. 
 
 We show that clear improvements are possible using HMC compared to Metropolis-Hasting, and that the Normalizing Flows using the Neural Transport is a promising methodology.
-;in the early phases of Bayesian model development JAZ not sure what this means so I left it out
+{\color{red}
+;in the early phases of Bayesian model development JAZ not sure what this means so I left it out}
 
 \end{abstract}
 
@@ -246,7 +222,7 @@ A recent entrant to this field is the \texttt{JAX} library\footnote{\url{https:/
 % \footnote{\url{https://pytorch.org/docs/}}
 % \footnote{\url{https://mc-stan.org/users/documentation}}
 
-In this context we have developed the open source \texttt{jax-cosmo} library \footnote{ \url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}}, which we present in this paper. The package represents a first step in making the powerful features described above useful for cosmology; it implements a selection of theory predictions for key cosmology observables as differentiable JAX functions.
+In this context we have developed the open source \texttt{jax-cosmo} library \footnote{\url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}}, which we present in this paper. The package represents a first step in making the powerful features described above useful for cosmology; it implements a selection of theory predictions for key cosmology observables as differentiable JAX functions.
 
 
 We give an overview of the code's design and contents in Section \ref{sec-jaxcosmo-design}. We show how to use it for rapid and numerically stable Fisher forecasts in Section~\ref{sec-fisher-forecast}, in more advanced gradient-based cosmological inference with variants of Hamiltonian Monte Carlo and its variant No-U-Turn in Section~\ref{sec:chmc}, and in ML-accelerated Stochastic Variational Inference in Section~\ref{sec-SVI}. We discuss and compare these methods in Section~\ref{sec-discussion} and conclude in Section~\ref{sec-conclusion}
@@ -322,7 +298,7 @@ To illustrate the different features available with the present version of the l
 \label{sec-fisher-forecast}
 % illustrates why autodiff is interesting from several points of view
 
-\FLa{Add description of problem and small demos}
+\FrL{Add description of problem and small demos}
 
 
 
@@ -350,7 +326,7 @@ g = jax.grad(likelihood)(cosmo)
 
 # Compute Fisher matrix of cosmological 
 # parameters
-F = - jax.hessian(likelihood)(cosmo)
+F = -jax.hessian(likelihood)(cosmo)
 \end{lstlisting}
 %\end{minted}
 
@@ -502,11 +478,11 @@ which exhibit the Jacobian of the $T^{-1}$ transformation. The main advantage of
 
 Now, one is faced with the evaluation of the expectations during gradient descent. The solution is to use what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \citep{2015arXiv150603431K}). Let us illustrate the trick in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
 \begin{multline}
--\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\eta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
+-\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
 \label{eq-loss-svi-3}
 \end{multline}
 where $\mathbb{H}(q)$ is the Shannon entropy of the MVN distribution which is independent of the model, so its gradient can be computed once for all and reused in any user model. Then,
-to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the expectation which leads to
+to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the expectation which leads to\footnote{To simplify the notation, $T^{-1}(S_\lambda^{-1}(\zeta))$ has been replaced by $z$.}
 \begin{multline}
 -\nabla_\lambda\mathcal{L}(\lambda) = \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
 \left[ \nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)] \right. \right. \\
@@ -574,7 +550,7 @@ Using the same DES-Y1 simulation as in previous section, we use a MVN distributi
 
 Then, we have used the Neural Transport method to generate Markov Chains of different sizes by the NUTS sampler, the chains have run 200 warm samples, and then 200 samples ("low" schema), 1000 samples on a single chain, and finally we have run 10 chains  with 1000 samples each. All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of these 3 runs is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the "low" schema results as shown in the figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
 
-Results in terms of sampling efficiency are shown on Tab.~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to use these schema to ease the model development in its early phase.
+Results in terms of sampling efficiency are shown on Tab.~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to ease the model development in its early phase.
 %
 \section{Discussion}
 \label{sec-discussion}
@@ -615,7 +591,7 @@ So, the authors think that it is worth considering methods like HMC/NUTS that by
 \section{Conclusions \& Prospects}
 \label{sec-conclusion}
 
-\FLa{mention something about scaling with parallel MCMC}
+\FrL{mention something about scaling with parallel MCMC}
 
 \subsection{Efficient sampling in high dimensions with Hamiltonian Monte Carlo}
 
@@ -698,12 +674,13 @@ Then, we generate mock angular power spectra $C_\ell$ from the auto \& cross cor
 %\begin{minted}[fontsize=\footnotesize]{python}
 \begin{lstlisting}[language=iPython]
 # Define the lensing and number counts probe
-    probes = [jc.probes.WeakLensing(nzs_s_sys, 
-                                    ia_bias=b_ia,
+probes = [jc.probes.WeakLensing(nzs_s_sys, 
+                       ia_bias=b_ia,
                        multiplicative_bias=m),
-             jc.probes.NumberCounts(nzs_l, b)]
-cl, C = gaussian_cl_covariance_and_mean(cosmo, ell, probes, 
-                               f_sky=0.25, sparse=True)
+          jc.probes.NumberCounts(nzs_l, b)]
+cl, C = gaussian_cl_covariance_and_mean(cosmo, 
+                 ell, probes, 
+                 f_sky=0.25, sparse=True)
 \end{lstlisting}
 %\end{minted} 
 with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
@@ -720,13 +697,14 @@ fiducial_model = condition(model,
 
 with seed(rng_seed=42):
     data, P, C = fiducial_model()
-%\end{minted}
 \end{lstlisting}
+%\end{minted}
 
 The \textit{inference model} looks very similar to the \textit{forward model} excepts that first we fix the angular power spectra covariance matrix $C$ (and its inverse $P$) and secondly we let \numpyro\ generates the model $C_{\ell}$ from the priors
 %\begin{minted}[fontsize=\footnotesize]{python}
 \begin{lstlisting}[language=iPython]
-cl = jc.angular_cl.angular_cl(cosmo, ell, probes).flatten()
+cl = jc.angular_cl.angular_cl(cosmo, ell, 
+                              probes).flatten()
 return numpyro.sample('cl', MultivariateNormal(cl, 
                             precision_matrix=P,
                             covariance_matrix=C))
@@ -743,10 +721,10 @@ Then, as an example the optimisation of the cosmological parameters using for in
 %\begin{minted}[fontsize=\footnotesize]{python}
 \begin{lstlisting}[language=iPython]
 nuts_kernel = numpyro.infer.NUTS(observed_model,
-                     step_size=1e-1, 
-                     init_strategy=numpyro.infer.init_to_median,
-                     dense_mass=True,
-                     max_tree_depth=7)
+              step_size=1e-1, 
+              init_strategy=numpyro.infer.init_to_median,
+              dense_mass=True,
+              max_tree_depth=7)
 
 mcmc = numpyro.infer.MCMC(nuts_kernel, 
                           num_warmup=200, 
@@ -763,7 +741,8 @@ More details can be found in the repository of this paper at this link \nblink{V
 %% bibitems, please use
 %%
 %\section*{Bibliography}
-\bibliographystyle{elsarticle-harv} 
+%\bibliographystyle{elsarticle-harv} 
+\bibliographystyle{aa} 
 \typeout{}
 \bibliography{refs}
 
