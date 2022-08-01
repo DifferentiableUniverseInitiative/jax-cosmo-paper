@@ -170,7 +170,7 @@ J. Zuntz$^3$,\\
 
 \affiliation{$^1$Université Paris-Saclay, CNRS/IN2P3, IJCLab, 91405 Orsay, France}
 
-\date{\today}
+%\date{\today}
 
 \begin{abstract}
 The recent JAX library has created a new ecosystem from which probabilistic programming software can take enormous benefit: batch acceleration, just-in-time compilation, and automatic optimization of code for different hardware modalities (CPU, GPU, TPU) can provide huge speed-ups to a wide range of different problems. In particular, JAX exposes an \textit{automatic differentiation} mechanism, which can take a python function that uses JAX and return its (vector) derivative.  This gives us the opportunity to apply a range of powerful but otherwise unfeasible algorithms used in Bayesian inference, such as Hamiltonian Monte Carlo (HMC) and Variational Inference. 
@@ -339,7 +339,7 @@ F = -jax.hessian(likelihood)(cosmo)
 % Needs to mention the tomo challenge, mention that we can backpropagate through a NN and the cosmology model
 % Maybe this can be only mentioned in the discussion.
 
-Fisher forecasts are also commonly used in survey and analysis strategy strategy, where running a full posterior analysis for each possible choice would be unfeasible. The inverse area of a projection of a Fisher matrix in parameters of interest can be used as a metric for survey constraining power, such as in the Dark Energy Task Force report \citep{detf}.
+Fisher forecasts are also commonly used in survey and analysis strategy strategy, where running a full posterior analysis for each possible choice would be unfeasible. The inverse area of a projection of a Fisher matrix in parameters of interest can be used as a metric for survey constraining power, such as in the Dark Energy Task Force report \citep{2006astro.ph..9591A}.
 
 \texttt{jax-cosmo} was used in a recent example of such a process, for the  the LSST-DESC 3x2pt tomography optimization challenge \citep{2021OJAp....4E..13Z}, where the best methodology for assignment of galaxies to tomographic bins was assessed using several such figures of merit and related calculations. The \texttt{jax-cosmo} metric proved to be stable and fast.
 
