@@ -356,7 +356,7 @@ In the following sections we review some statistical methods used to make the co
 %
 %
 %
-\subsubsection{Vanilla HMC}
+\subsection{Vanilla HMC}
 %
 % Show Joe's vanilla HMC results against Cobaya
 Hamiltonian Monte Carlo (HMC) is an MCMC-type method particularly suited to drawing
@@ -418,7 +418,7 @@ The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the
 %or future \citep{s4,simons} accuracy is currently beyond the scope of this project.  
 %If this is needed then HMC could use a fast approximation to a CMB theory spectrum, and importance sampling applied to the complete chain.
 
-\subsubsection{NUTS}
+\subsection{NUTS}
 \label{sec-NUTS}
 %
 % Show the advantage of using NUTS 
@@ -504,7 +504,7 @@ For the use case of the MVN (auto)guide, one gets
 \end{align}
 The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the "S" of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX. Now even if one can sample from the optimized  $q(z,\lambda^\ast)$ distribution, we have used SVI as front-end to a NUTS sampler which is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}.
 %
-\subsubsection{Neural Transport}
+\subsection{Neural Transport}
 \label{sec-Neural-Reparametrisation}
 %
 If the SVI method can be used as is to get $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution, the \textit{Neural Transport MCMC} method \citep{2014arXiv1412.5492P,2019arXiv190303704H} is an efficient way to boost HMC efficiency, especially in target distribution unfavourable geometry where for instance the leapfrog integration algorithm has to face squeezed join distributions for a subset of variables. From SVI, one obtains a first approximation of the target distribution and we show that the change-of-variable $z=F_\lambda(\zeta)$ is such that
