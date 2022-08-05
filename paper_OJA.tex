@@ -139,6 +139,7 @@
 \newcommand{\github}{\href{https://github.com/DifferentiableUniverseInitiative/jax\_cosmo}{\faGithub}}
 
 %%% color Comments 
+%% JEC : \FL produces a clash we another definition (but coannot figure out which one)  
 \newcommand{\FrL}[1]{{\color{cyan}FL: #1}}
 
 %%%% new command (JEC)
@@ -175,7 +176,7 @@ J. Zuntz$^3$,\\
 \begin{abstract}
 The recent JAX library has created a new ecosystem from which probabilistic programming software can take enormous benefit: batch acceleration, just-in-time compilation, and automatic optimization of code for different hardware modalities (CPU, GPU, TPU) can provide huge speed-ups to a wide range of different problems. In particular, JAX exposes an \textit{automatic differentiation} mechanism, which can take a python function that uses JAX and return its (vector) derivative.  This gives us the opportunity to apply a range of powerful but otherwise unfeasible algorithms used in Bayesian inference, such as Hamiltonian Monte Carlo (HMC) and Variational Inference. 
 
-To take advantage of these possibilities within cosmology we have developed the \texttt{jax-cosmo} library, which implements background evolution, linear and non linear power spectra (using \texttt{halofit} or the Eisenstein and Hu transfer function), as well as angular power spectra ($C_\ell$) with the Limber approximation for galaxy and weak lensing probes. We discuss algorithms made possible by this library, and present comparisons with the Core Cosmology Library as a benchmark, and run a series of tests using the Dark Energy Survey Year 1 3x2pt analysis with the \numpyro\ library to demonstrate practical usage. 
+To take advantage of these possibilities within cosmology we have developed the \jaxcosmo\ library, which implements background evolution, linear and non linear power spectra (using \texttt{halofit} or the Eisenstein and Hu transfer function), as well as angular power spectra ($C_\ell$) with the Limber approximation for galaxy and weak lensing probes. We discuss algorithms made possible by this library, and present comparisons with the Core Cosmology Library as a benchmark, and run a series of tests using the Dark Energy Survey Year 1 3x2pt analysis with the \numpyro\ library to demonstrate practical usage. 
 
 We show that clear improvements are possible using HMC compared to Metropolis-Hasting, and that the Normalizing Flows using the Neural Transport is a promising methodology.
 %{\color{red}
@@ -221,10 +222,10 @@ A recent entrant to this field is the \texttt{JAX} library\footnote{\url{https:/
 % \footnote{\url{https://pytorch.org/docs/}}
 % \footnote{\url{https://mc-stan.org/users/documentation}}
 
-In this context we have developed the open source \texttt{jax-cosmo} library\footnote{\url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}}, which we present in this paper. The package represents a first step in making the powerful features described above useful for cosmology; it implements a selection of theory predictions for key cosmology observables as differentiable JAX functions.
+In this context we have developed the open source \jaxcosmo\ library\footnote{\url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}}, which we present in this paper. The package represents a first step in making the powerful features described above useful for cosmology; it implements a selection of theory predictions for key cosmology observables as differentiable JAX functions.
 
 
-We give an overview of the code's design and contents in Section \ref{sec-jaxcosmo-design}. We show how to use it for rapid and numerically stable Fisher forecasts in Section~\ref{sec-fisher-forecast}, in more advanced gradient-based cosmological inference with variants of Hamiltonian Monte Carlo and its variant No-U-Turn in Section~\ref{sec:chmc}, and in ML-accelerated Stochastic Variational Inference in Section~\ref{sec-SVI}. We discuss and compare these methods in Section~\ref{sec-discussion} and conclude in Section~\ref{sec-conclusion}.
+We give an overview of the code's design and contents in Section~\ref{sec-jaxcosmo-design}. We show how to use it for rapid and numerically stable Fisher forecasts in Section~\ref{sec-fisher-forecast}, in more advanced gradient-based cosmological inference with variants of Hamiltonian Monte Carlo and its variant No-U-Turn in Section~\ref{sec:chmc}, and in ML-accelerated Stochastic Variational Inference in Section~\ref{sec-SVI}. We discuss and compare these methods in Section~\ref{sec-discussion} and conclude in Section~\ref{sec-conclusion}.
 
 
 
@@ -282,7 +283,7 @@ Remarkably, all the integral involved in the computation can be easily different
 
 %
 %\subsection{Validation against the Core Cosmology Library (CCL)}
-To illustrate the different features available with the present version of the library, we have written a  notebook to make  comparison with the well established  Core Cosmology Library. As an example, the Figure \ref{fig:halofit_comparison} shows an example of the non linear matter power spectrum computation using the \texttt{halofit} fitting function. 
+To illustrate the different features available with the present version of the library, we have written a  companion notebook \nblink{CCL_comparison} to make  comparison with the well established  Core Cosmology Library. As an example, the Figure~\ref{fig:halofit_comparison} shows an example of the non linear matter power spectrum computation using the \texttt{halofit} fitting function. 
 %
 \begin{figure}[ht]
     \centering
@@ -300,11 +301,10 @@ To illustrate the different features available with the present version of the l
 \FrL{Add description of problem and small demos}
 
 
-
-\subsection{DES Y1 setting}
+%JEC 5 August 22: not sure that should be given here as we have an Appendix for that and the main application described in the following sections concern DES Y1. 
+%\subsection{DES Y1 setting}
 % Here we describe the data and 3x2pt model for DES Y1 
- 
-In this section, we adopt as a setting a DES Y1 3x2pt-like analysis. 
+% In this section, we adopt as a setting a DES Y1 3x2pt-like analysis. 
 
 
 \subsection{Instantaneous Fisher Forecasts}
@@ -340,18 +340,18 @@ F = -jax.hessian(likelihood)(cosmo)
 
 Fisher forecasts are also commonly used in survey and analysis strategy strategy, where running a full posterior analysis for each possible choice would be unfeasible. The inverse area of a projection of a Fisher matrix in parameters of interest can be used as a metric for survey constraining power, such as in the Dark Energy Task Force report \citep{2006astro.ph..9591A}.
 
-\texttt{jax-cosmo} was used in a recent example of such a process, for the  the LSST-DESC 3x2pt tomography optimization challenge \citep{2021OJAp....4E..13Z}, where the best methodology for assignment of galaxies to tomographic bins was assessed using several such figures of merit and related calculations. The \texttt{jax-cosmo} metric proved to be stable and fast.
+\jaxcosmo\ was used in a recent example of such a process, for the  the LSST-DESC 3x2pt tomography optimization challenge \citep{2021OJAp....4E..13Z}, where the best methodology for assignment of galaxies to tomographic bins was assessed using several such figures of merit and related calculations. The \jaxcosmo\ metric proved to be stable and fast.
 
 
 
 \subsection{Massive Optimal Compression in 3 Lines}
 
-% Here we can implement MOPED for the compression of 
+\FrL{Here we can implement MOPED for the compression}
 
 \section{Application: Classical Hamiltonian Monte Carlo}
 \label{sec:chmc}
 %
-In the following sections we review some statistical methods used to make the cosmological parameter inference with \jaxcosmo. We have used a variant of Hamiltonian Monte Carlo knows as \textit{No-U-Turn} (NUTS) and NUTS after a \textit{Neural Transport} perform using a \textit{Stochastic Variational Inference} (aka SVI). All  the methods have been implemented using the \numpyro probabilistic programming language (PPL). 
+In the following sections we review some statistical methods used to make the cosmological parameter inference with \jaxcosmo. We have used a variant of Hamiltonian Monte Carlo knows as \textit{No-U-Turn} (NUTS) and NUTS after a \textit{Neural Transport} perform using a \textit{Stochastic Variational Inference} (aka SVI). All  the methods have been implemented using the \numpyro\ probabilistic programming language (PPL). 
 %
 %
 %
@@ -423,16 +423,16 @@ The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the
 % Show the advantage of using NUTS 
 % look at difference in efficiency in terms of how many times we need to call the model.
 
-The No-U-Turn (aka NUTS))  variant of the traditional HMC sampler has been introduced in reference \citep{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. So, in a automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls a each generation.
+The No-U-Turn (aka NUTS))  variant of the traditional HMC sampler has been introduced in reference \citep{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. So, in a automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls at each generation.
 
-Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class.  After the forward model creation for the DES-Y1 3x2pts exercise described in \ref{app-DESY1}, we have performed 
+Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class.  After the forward model creation for the DES-Y1 3x2pts exercise described in Appendix~\ref{app-DESY1}, we have performed 
 \begin{itemize}
-    \item first a reparametrisation of the latent variable uniform priors (Tab.~\ref{tab-DESY1}) to use a unified uniform prior $\mathcal{U}[-5,5]$;
+    \item first a reparametrisation of the latent variable uniform priors (Table~\ref{tab-DESY1}) to use a unified uniform prior $\mathcal{U}[-5,5]$;
     \item second for the warm-up phase we ask for mass matrix optimisation with essentially a diagonal form but with a block structure for the following sets of parameters $(\Omega_b,\Omega_c,\sigma_8,w_0,h)$ and $(b_i)_{i:1\dots5}$. This matrix structuring is motivated by the expected degree of correlation of the concerned parameters as can be shown for instance in Figure \ref{fig_cobaya_NUTS_SVI_bis}.
 \end{itemize}
 The NUTS sampler have been running with 16 chains of 1,000 samples each (\texttt{vectorized} option) after a warm-up phase consisting of 200 samples, and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). The experiments have been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or a NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapse time for these experiments was 20 hours.
 
-The results in terms of relative effective sample sizes (aka "ESS") are detailed in Tab.~\ref{tab-ESS-NUTS_SVI-1} while the confidential level (CL) contours are presented in Figure \ref{fig_cobaya_NUTS_SVI}. One notices the dramatic improvement of the ESS by about a factor 10 using the NUTS sampler compared to the highly-optimized \texttt{Cobaya}  Metropolis-Hastings implementation \citep{2019ascl.soft10019T,2021JCAP...05..057T} which has last about 40 hours on CPU to generate 70,000 samples. The CL contours are also in very good agreement. It is worth to point out that the mass matrix structuring operation is a very effective as it increases the sampling efficiency by about a factor 2.   Anticipating the section \ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective solution to validate the model with fewer samples, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Tab.~\ref{tab-ESS-NUTS_SVI-1}), then the user is highly encouraged to tune this critical parameter. 
+The results in terms of relative effective sample sizes (aka "ESS") are detailed in Table~\ref{tab-ESS-NUTS_SVI-1} while the confidential level (CL) contours are presented in Figure \ref{fig_cobaya_NUTS_SVI}. One notices the dramatic improvement of the ESS by about a factor 10 using the NUTS sampler compared to the highly-optimized \texttt{Cobaya}  Metropolis-Hastings implementation \citep{2019ascl.soft10019T,2021JCAP...05..057T} which has last about 40 hours on CPU to generate 70,000 samples. The CL contours are also in very good agreement. It is worth to point out that the mass matrix structuring operation is a very effective as it increases the sampling efficiency by about a factor 2.   Anticipating the Section~\ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective solution to validate the model with fewer samples, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Table~\ref{tab-ESS-NUTS_SVI-1}), then the user is highly encouraged to tune this critical parameter. 
 %
 \begin{figure*}
 \centering
@@ -547,19 +547,19 @@ which is evaluated with optimal $\lambda^\ast$ according to maximization of the 
 
 Using the same DES-Y1 simulation as in previous section, we use a MVN distribution as \textit{guide} to approximate the true posterior (\textit{model}) and feed a SVI. The SVI optimization has been performed with the Adam optimizer \citep{2014arXiv1412.6980K} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 steps to ensure a good convergence of the ELBO loss, but no particular tuning of the optimizer has been undertaken to decrease the number of steps. It takes 2 hours on the NVidia V100 GPU.  
 
-Then, we have used the Neural Transport method to generate Markov Chains of different sizes by the NUTS sampler, the chains have run 200 warm samples, and then 200 samples ("low" schema), 1000 samples on a single chain, and finally we have run 10 chains  with 1000 samples each. All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of these 3 runs is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the "low" schema results as shown in the figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
+Then, we have used the Neural Transport method to generate Markov Chains of different sizes by the NUTS sampler, the chains have run 200 warm samples, and then 200 samples ("low" schema), 1000 samples on a single chain, and finally we have run 10 chains  with 1000 samples each. All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of these 3 runs is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the "low" schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
 
-Results in terms of sampling efficiency are shown on Tab.~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to ease the model development in its early phase.
+Results in terms of sampling efficiency are shown on Table~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to ease the model development in its early phase.
 %
 \section{Discussion}
 \label{sec-discussion}
 %
-The key question is: what is the HMC/NUTS gain compared to the well known highly optimized \texttt{Cobaya} sampler? 
+To a large extend looking at results of Table~\ref{tab-ESS-NUTS_SVI-1}, the key question is: what is the HMC/NUTS gain compared to the well known highly optimized \texttt{Cobaya} sampler? 
 In one hand, one may argue considering the elapse time of execution that the number of efficient samples per model call is a right metric to consider: 
 \begin{equation}
     \eta = \frac{n_{eff}}{\#\ of\ calls} = \frac{N_s \times \varepsilon}{N_s \times n_{steps}} = \frac{\varepsilon}{n_{steps}}
 \end{equation}
-with $N_s$ the total number of samples, $\varepsilon$ the sampler efficiency and $n_{steps}$ the number of steps (calls) per sample generation. Then, for \texttt{Cobaya} one roughly gets $\varepsilon\approx 3\%$ with $n_{steps}=1$ while for the NUTS sampler $\varepsilon\approx 50\%$ but at the expense of $n_{steps}=2^5$ or more. At the end of the day after tuning generation parameters, the $\eta$ values for both methods would certainly be comparable (ie. about $1\%$). So, at first sight one may conclude that there is no gain to use HMC/NUTS compared to standard MCMC sampler.  
+with $N_s$ the total number of samples, $\varepsilon$ the effective sampler efficiency  and $n_{steps}$ the number of steps (calls) per sample generation. Then, for \texttt{Cobaya} one roughly gets $\varepsilon\approx 3\%$ with $n_{steps}=1$ while for the NUTS sampler $\varepsilon\approx 50\%$ but at the expense of $n_{steps}=2^5$ or more. At the end of the day after tuning generation parameters, the $\eta$ values for both methods would certainly be comparable (ie. about $1\%$). So, at first sight one may conclude that there is no gain to use HMC/NUTS compared to standard MCMC sampler.  
 
 On the other hand, the above metric is may be too crude to cover all aspects of the sample generation. One should probably have in mind that the low sampling efficiency of standard MCMC sampler requires mobilizing a large amount of resources to produce a sufficient large sample batch in a reasonable time scale, ie. several days on dedicated infrastructure. Moreover, the user is faced to the dilemma to perform or not a statistical sample selection post-processing as \textit{thinning} beyond the \textit{burn-in removal} which is a rather delicate procedure and time consuming too, needing how-know to be conducted correctly \citep{doi:10.1146/annurev-statistics-040220-091727, 2015arXiv151007727O}. 
 
