@@ -178,8 +178,8 @@ The recent JAX library has created a new ecosystem from which probabilistic prog
 To take advantage of these possibilities within cosmology we have developed the \texttt{jax-cosmo} library, which implements background evolution, linear and non linear power spectra (using \texttt{halofit} or the Eisenstein and Hu transfer function), as well as angular power spectra ($C_\ell$) with the Limber approximation for galaxy and weak lensing probes. We discuss algorithms made possible by this library, and present comparisons with the Core Cosmology Library as a benchmark, and run a series of tests using the Dark Energy Survey Year 1 3x2pt analysis with the \numpyro\ library to demonstrate practical usage. 
 
 We show that clear improvements are possible using HMC compared to Metropolis-Hasting, and that the Normalizing Flows using the Neural Transport is a promising methodology.
-{\color{red}
-;in the early phases of Bayesian model development JAZ not sure what this means so I left it out}
+%{\color{red}
+%;in the early phases of Bayesian model development JAZ not sure what this means so I left it out}
 
 \end{abstract}
 
@@ -205,11 +205,10 @@ Since the development of these MCMC packages, major advances have been made in a
 
 While these tools have especially been applied to neural network optimization and machine learning in general, they can also enable classical statistical methods that require the derivatives of (e.g. likelihood) functions to operate: we consider such methods in this paper. \textit{Autodiff} has been implemented in widely used libraries like \texttt{Stan} \citep{JSSv076i01}, \texttt{TensorFlow}  \citep{tensorflow2015-whitepaper}, and  \texttt{PyTorch} \citep{NEURIPS2019_9015}. 
 
-A recent entrant to this field is the \texttt{JAX} library\footnote{\url{https://jax.readthedocs.io}} \citep{jax2018github} which has undergone rapid development and can automatically differentiate native \texttt{Python} and \texttt{NumPy} functions, offering a speed up to the development process and indeed code runtimes. \texttt{JAX} offers an easy parallelization mechanism (\texttt{vmap}), and just-in-time compilation (\texttt{jit}) and optimization targetting CPU, GPU and TPU hardware thanks to the \texttt{XLA} library that powers TensorFlow . These attractive features have driven wide adoption of \texttt{JAX} in computational research, and motivate us to consider its usage in cosmology.
+A recent entrant to this field is the \texttt{JAX} library\footnote{\url{https://jax.readthedocs.io}} \citep{jax2018github} which has undergone rapid development and can automatically differentiate native \texttt{Python} and \texttt{NumPy} functions, offering a speed up to the development process and indeed code runtimes. \texttt{JAX} offers an easy parallelization mechanism (\texttt{vmap}), and just-in-time compilation (\texttt{jit}) and optimization targetting CPU, GPU and TPU hardware thanks to the \texttt{XLA} library that powers TensorFlow. These attractive features have driven wide adoption of \texttt{JAX} in computational research, and motivate us to consider its usage in cosmology.
 
 \texttt{JAX} contains bespoke reimplementation of packages such as \texttt{jax.numpy} and \texttt{jax.scipy}, as well as example libraries as \texttt{Stax} for simple but flexible neural network development. It has formed the seed for a wider ecosystem of packages, including, for example: 
-\texttt{Flax} \citep{flax2020github} a high-performance neural network library, \texttt{JAXopt} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable collection of optimizers, \texttt{Optax} \citep{optax2020github} a gradient processing and optimization library, and \numpyro \citep{phan2019composable,bingham2019pyro}, a probabilistic programming language (PPL) that is used in this paper. Other PPL packages such as\texttt{PyMC} \citep{Salvatier2016} have switched to JAX backend in recent versions\footnote{A more exhaustive list and rapidly growing list of packages can be found at \url{https://project-awesome.org/n2cholas/awesome-jax}}
-.
+\texttt{Flax} \citep{flax2020github} a high-performance neural network library, \texttt{JAXopt} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable collection of optimizers, \texttt{Optax} \citep{optax2020github} a gradient processing and optimization library, and \numpyro \citep{phan2019composable,bingham2019pyro}, a probabilistic programming language (PPL) that is used in this paper. Other PPL packages such as \texttt{PyMC} \citep{Salvatier2016} have switched to JAX backend in recent versions\footnote{A more exhaustive list and rapidly growing list of packages can be found at \url{https://project-awesome.org/n2cholas/awesome-jax}}.
 
 % I don't think we need all these URLs, it's getting excessive, especially when they have papers:
 %\footnote{\url{https://flax.readthedocs.io/}}
@@ -222,10 +221,10 @@ A recent entrant to this field is the \texttt{JAX} library\footnote{\url{https:/
 % \footnote{\url{https://pytorch.org/docs/}}
 % \footnote{\url{https://mc-stan.org/users/documentation}}
 
-In this context we have developed the open source \texttt{jax-cosmo} library \footnote{\url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}}, which we present in this paper. The package represents a first step in making the powerful features described above useful for cosmology; it implements a selection of theory predictions for key cosmology observables as differentiable JAX functions.
+In this context we have developed the open source \texttt{jax-cosmo} library\footnote{\url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}}, which we present in this paper. The package represents a first step in making the powerful features described above useful for cosmology; it implements a selection of theory predictions for key cosmology observables as differentiable JAX functions.
 
 
-We give an overview of the code's design and contents in Section \ref{sec-jaxcosmo-design}. We show how to use it for rapid and numerically stable Fisher forecasts in Section~\ref{sec-fisher-forecast}, in more advanced gradient-based cosmological inference with variants of Hamiltonian Monte Carlo and its variant No-U-Turn in Section~\ref{sec:chmc}, and in ML-accelerated Stochastic Variational Inference in Section~\ref{sec-SVI}. We discuss and compare these methods in Section~\ref{sec-discussion} and conclude in Section~\ref{sec-conclusion}
+We give an overview of the code's design and contents in Section \ref{sec-jaxcosmo-design}. We show how to use it for rapid and numerically stable Fisher forecasts in Section~\ref{sec-fisher-forecast}, in more advanced gradient-based cosmological inference with variants of Hamiltonian Monte Carlo and its variant No-U-Turn in Section~\ref{sec:chmc}, and in ML-accelerated Stochastic Variational Inference in Section~\ref{sec-SVI}. We discuss and compare these methods in Section~\ref{sec-discussion} and conclude in Section~\ref{sec-conclusion}.
 
 
 
@@ -251,8 +250,8 @@ Currently, \jaxcosmo\  implements the \cite{Eisenstein_1998} transfer function a
 
 Future version of the library would offer the possibility to call a JAX emulator of the Cosmic Linear Anisotropy Solving System \citep{2011JCAP...07..034B}.
 
-To make the bridge with observations, two pytrees are introduced, namely \texttt{NumberCounts} and \texttt{WeakLensing} tracers for galaxy clustering and weak lensing  respectively,  with for each probe a bunch of redshift bins. A long this line, the angular power spectra $C_\ell^{pq}(z,z^\prime)$ for the probes $(p,q)$ and for redshift bin window selections $(N(z), N(z^\prime))$ are computed in the Limber approximation. 
-Remarkably, all the integral involved in the computation can be easily differentiated with respect to the cosmological parameters thanks to \textit{autodif} and the implementation of the above mentioned integration quadrature.  An example is given in the context of DES Y1 3x2pts analysis (\ref{app-DESY1}).
+To make the bridge with observations, two \textit{pyTrees} are introduced, namely \texttt{NumberCounts} and \texttt{WeakLensing} tracers for galaxy clustering and weak lensing  respectively,  with for each probe a bunch of redshift bins. A long this line, the angular power spectra $C_\ell^{pq}(z,z^\prime)$ for the probes $(p,q)$ and for redshift bin window selections $(N(z), N(z^\prime))$ are computed in the Limber approximation. 
+Remarkably, all the integral involved in the computation can be easily differentiated with respect to the cosmological parameters thanks to \textit{autodiff} and the implementation of the above mentioned integration quadrature.  An example is given in the context of DES Y1 3x2pts analysis (Appendix~\ref{app-DESY1}).
 
 
 
