@@ -571,8 +571,8 @@ So, the authors think that it is worth considering methods like HMC/NUTS that by
 %(0) "F.L run" are computed from NUTS sampler with 16 %parallel chains of 1,000 samples each and 200 warm-up %and \texttt{max\_tree\_depth=7} (see text) The numbers %are from \texttt{n\_eff/16,000};
 %}
 (a): results from Cobaya 70,000 samples;
-(b): results from NUTS sampler with 16 chains of 1,000 samples each and 200 warm-up and \texttt{max\_tree\_depth=7} (Sec.~\ref{sec-NUTS}); 
-(c) are the results of SVI Multivariate Normal followed by NUTS and Neural Transform  with 1 chain of 200 samples and 200 warm-up (Sec.~\ref{sec-Neural-Reparametrisation}).}
+(b): results from NUTS sampler with 16 chains of 1,000 samples each and 200 warm-up and \texttt{max\_tree\_depth=7} (Section~\ref{sec-NUTS}); 
+(c) are the results of SVI Multivariate Normal followed by NUTS and Neural Transform  with 1 chain of 200 samples and 200 warm-up (Section~\ref{sec-Neural-Reparametrisation}).}
 \label{tab-ESS-NUTS_SVI-1}
  \centering
 \begin{tabular}{ccccccccccc}
@@ -735,7 +735,7 @@ mcmc = numpyro.infer.MCMC(nuts_kernel,
 mcmc.run(jax.random.PRNGKey(42))
 \end{lstlisting}
 %\end{minted}
-More details can be found in the repository of this paper at this link \nblink{VectorizedNumPyro_block}.
+More details can be found in the repository of this paper to perform a \numpyro\ modeling using \jaxcosmo : a structured NUTS sampling described in Section~\ref{sec-NUTS} \nblink{VectorizedNumPyro_block}, and a SVI optimisation followed by NUTS sampling of Section~\ref{sec-Neural-Reparametrisation} \nblink{DESY_Y1_shear_cluster_ModelReparam_SVI-MVN_Neutra_NUTS}. Notice however that the notebooks are only illustrative and for a real sample production the authors invite the reader to run their own script.
 %% If you have bibdatabase file and want bibtex to generate the
 %% bibitems, please use
 %%
