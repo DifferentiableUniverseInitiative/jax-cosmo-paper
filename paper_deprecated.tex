@@ -60,6 +60,7 @@
 \newcommand{\github}{\href{https://github.com/DifferentiableUniverseInitiative/jax\_cosmo}{\faGithub}}
 
 \newcommand{\FL}[1]{{\color{cyan}FL: #1}}
+\newcommand{\JZ}[1]{{\color{blue}JZ: #1}}
 
 \journal{Astronomy and Computing}
 
@@ -184,40 +185,46 @@ We give an overview of the code's design and contents in Section \ref{sec-jaxcos
 
 \section{Modeling and implementation}
 \label{sec-jaxcosmo-design}
-In this section, we describe the cosmological modeling provided by \jaxcosmo, and its implementation in JAX. The general development follows the Core Cosmology Library structure \citep{2019ApJS..242....2C} although it does not include all the options as the present \jaxcosmo\ version is more to be viewed as a proof of concept.
+In this section, we describe the cosmological modeling provided by \jaxcosmo, and its implementation in JAX. The general design follows that of the Core Cosmology Library (CCL) \citep{2019ApJS..242....2C}, though the present proof-of-concept \jaxcosmo\ does not include as many features and options as CCL.
 
-The cosmological parameters are organised in a JAX \textit{pyTree} container\footnote{\url{https://jax.readthedocs.io/en/latest/jax-101/05.1-pytrees.html}} which allows one to use \textit{autodiff} and \texttt{vmap} transparently. The present choice of parameters are: $\Omega_{cdm}$ the cold dark matter density fraction, $\Omega_b$ the Byronic matter density fraction, $h$ the Hubble constant divided by $100$~km/s/Mpc, $n_s$ the primordial scalar perturbation spectral index, $\sigma_8$ the variance of matter density perturbations at an $8$~Mpc/h scale, $\Omega_k$ the curvature density fraction, $w_0$ the first order term of dark energy equation and $w_a$ the second order term of dark energy equation of state. 
+The cosmological parameters are organised in a JAX \textit{pyTree} container\footnote{\url{https://jax.readthedocs.io/en/latest/jax-101/05.1-pytrees.html}} which allows one to use \textit{autodiff} and \texttt{vmap} transparently. The present set of exposed parameters is: $\Omega_{cdm}$ the cold dark matter density fraction, $\Omega_b$ the Baryonic matter density fraction, $h$ the Hubble constant divided by $100$~km/s/Mpc, $n_s$ the primordial scalar perturbation spectral index, $\sigma_8$ the variance of matter density perturbations at an $8$~Mpc/h scale, $\Omega_k$ the curvature density fraction, $w_0$ the first order term of dark energy equation and $w_a$ the second order term of dark energy equation of state. 
 
-The traditional computation of the different cosmological background follows \cite{2005A&A...443..819P}  with namely the Friedmann equation
+\subsection{Background cosmology}
+
+The computation of the evolution of the cosmological background follows a typical implementation of a Friedmann equation (\citealp[see e.g.][]{2005A&A...443..819P}):
 \begin{equation}
-    E^2(a) = \frac{H^2(a)}{H^2_0} = \Omega_m a^{-3} + \Omega_k a^{-2} + \Omega_{de} e^{f(a)}
+    E^2(a) = \frac{\mathrm{H}^2(a)}{\mathrm{H}^2_0} = \Omega_m a^{-3} + \Omega_k a^{-2} + \Omega_{de} e^{f(a)}
 \end{equation}
-with $a=1/(1+z)$ the scale factor related to the redshift $z$, $H(a)=\dot{a}/a$ the Hubble parameter with $H_0$ its present day value, $\Omega_m= \Omega_{cdm}+\Omega_b$, $\Omega_{de}=1-\Omega_k-\Omega_m$, and 
+with $a=1/(1+z)$ the scale factor related to the redshift $z$, $H(a)=\dot{a}/a$ the Hubble parameter with $\mathrm{H}_0$ its present day value, $\Omega_m= \Omega_{cdm}+\Omega_b$, $\Omega_{de}=1-\Omega_k-\Omega_m$, and 
 \begin{equation}
     f(a) = -3 (1 + w_0 + w_a) \ln(a) + 3 w_a (a - 1)
 \end{equation}
-Noticeably, the relativist contributions of massless neutrinos and photon radiations, as well as the massive neutrino contribution are neglected.
+Notably, the relativistic contributions of massless neutrinos and photon radiation, as well as the massive neutrino contribution are presently neglected.
 
-Currently, \jaxcosmo\  implements the \cite{Eisenstein_1998} transfer function and non-linear features through the \textit{halofit} model by \cite{2012ApJ...761..152T} or \cite{2003MNRAS.341.1311S} without the neutrino contribution introduced by \cite{10.1111/j.1365-2966.2011.20222.x}. No Baryon feedback modeling is considered yet. It is worth to mention that to perform \textit{autodiff} we have implemented a series of tools as differentiable ODE via Runge-Kutta as well as integration methods as Simpson quadrature and Romberg algorithm.
+\subsection{Growth of perturbations}
 
-Future version of the library would offer the possibility to call a JAX emulator of the Cosmic Linear Anisotropy Solving System \citep{2011JCAP...07..034B}.
+Currently, \jaxcosmo\  implements the \citet{Eisenstein_1998} transfer function and non-linear features through the \textit{halofit} model by \cite{2012ApJ...761..152T} or \cite{2003MNRAS.341.1311S} without the neutrino contribution introduced by \cite{10.1111/j.1365-2966.2011.20222.x}. No Baryon feedback modeling is considered yet. To perform \textit{autodiff} we have implemented various tools as differentiable ODEs using the Runge-Kutta algorithm, as well as Simpson quadrature and the Romberg algorithm for numerical integration.
+
+Future version of the library would offer the possibility to call a JAX emulator of the Cosmic Linear Anisotropy Solving System \citep{2011JCAP...07..034B}. \JZ{How close is this to readiness? If it's just an idea or an early prototype then skip this paragraph}
+
+\subsection{Angular power spectra}
+
+\jaxcosmo\ is currently focused on predicting projected 2D Fourier-space 2pt galaxy lensing, clustering, and cross correlations, the $C_\ell$ values that are a primary object of 
 
 To make the bridge with observations, two pytrees are introduced, namely \texttt{NumberCounts} and \texttt{WeakLensing} tracers for galaxy clustering and weak lensing  respectively,  with for each probe a bunch of redshift bins. A long this line, the angular power spectra $C_\ell^{pq}(z,z^\prime)$ for the probes $(p,q)$ and for redshift bin window selections $(N(z), N(z^\prime))$ are computed in the Limber approximation. 
+
+\JZ{Discuss the Limber implementation here}
+
 Remarkably, all the integral involved in the computation can be easily differentiated with respect to the cosmological parameters thanks to \textit{autodif} and the implementation of the above mentioned integration quadrature.  An example is given in the context of DES Y1 3x2pts analysis (\ref{app-DESY1}).
 
 
 
 
 % Explain how the code is structured, mention some tricks of autodiff if we have some
-% Follows a bit the structure of the CCL library
 
-
-
-%\subsection{Background cosmology}
 % Usual stuff
 
 
-%\subsection{Growth of perturbations}
 % The interesting point to mention here is the differentiable growth ODE
 
 
@@ -225,8 +232,6 @@ Remarkably, all the integral involved in the computation can be easily different
 % Here we describe the EH power spectrum, mention possible extensions with emulators
 
 
-%\subsection{Tracers}
-% Here we describe the kernels, like in CCL
 
 
 %\subsection{Angular power-spectra}
