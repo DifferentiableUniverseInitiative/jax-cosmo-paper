@@ -271,7 +271,7 @@ To make a bridge to these observables, two \textit{pyTree} objects are implement
     \begin{equation}
         K_i(z) = n_i(z)\ b(z)\ H(z)
     \end{equation}
-where $n_i(s)$ is the redshift distribution of the sample (eg. \texttt{jc.redshift.kde\_nz} function), $b(z)$ a galaxy bias function (see  \texttt{jc.bias.constant\_linear\_bias}). 
+where $n_i(s)$ is the redshift distribution of the sample (eg. \texttt{jc.redshift.kde\_nz} function), $b(z)$ a galaxy bias function (see  \texttt{jc.bias.constant\_linear\_bias}). No redshift space distorsions are taken into account.
  \item \textbf{WeakLensing}:
     \begin{multline}
  K_i(z) = \left( \frac{3 H_0^2\Omega_m}{2 c} \right) \left(\frac{(\ell+2)!}{(\ell-2)!} \right)^{1/2}\times 
