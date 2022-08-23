@@ -236,8 +236,7 @@ We give an overview of the code's design and contents in Section~\ref{sec-jaxcos
 \label{sec-jaxcosmo-design}
 In this section, we describe the cosmological modeling provided by \jaxcosmo, and its implementation in JAX. The general design follows that of the Core Cosmology Library (CCL) \citep{2019ApJS..242....2C}, though the present proof-of-concept \jaxcosmo\ does not include as many features and options as CCL.
 
-The cosmological parameters are organised in a JAX \textit{pyTree} container\footnote{\url{https://jax.readthedocs.io/en/latest/jax-101/05.1-pytrees.html}} which allows one to use \textit{autodiff} and \texttt{vmap} transparently. The present set of exposed parameters is: $\Omega_{cdm}$ the cold dark matter density fraction, $\Omega_b$ the Baryonic matter density fraction, $h$ the Hubble constant divided by $100$~km/s/Mpc, $n_s$ the primordial scalar perturbation spectral index, $\sigma_8$ the variance of matter density perturbations at an $8$~Mpc/h scale, $\Omega_k$ the curvature density fraction, $w_0$ the first order term of dark energy equation and $w_a$ the second order term of dark energy equation of state. 
-
+The cosmological parameters are organised in a JAX \textit{pyTree} container\footnote{\url{https://jax.readthedocs.io/en/latest/jax-101/05.1-pytrees.html}} \texttt{jc.Cosmology} where \texttt{jc} hereafter stands for \jaxcosmo. This container allows one to use \textit{autodiff} and \texttt{vmap} transparently. The present set of exposed parameters is: $\Omega_{cdm}$ the cold dark matter density fraction, $\Omega_b$ the Baryonic matter density fraction, $h$ the Hubble constant divided by $100$~km/s/Mpc, $n_s$ the primordial scalar perturbation spectral index, $\sigma_8$ the variance of matter density perturbations at an $8$~Mpc/h scale, $\Omega_k$ the curvature density fraction, $w_0$ the first order term of dark energy equation and $w_a$ the second order term of dark energy equation of state. Notably, \texttt{jc.Planck15} instantiates a set of cosmological parameters inspired from the Planck 2015 results \citep{2016A&A...594A..13P}. 
 
 \subsection{Background cosmology}
 
@@ -249,7 +248,7 @@ with $a=1/(1+z)$ the scale factor related to the redshift $z$, $H(a)=\dot{a}/a$ 
 \begin{equation}
     f(a) = -3 (1 + w_0 + w_a) \ln(a) + 3 w_a (a - 1)
 \end{equation}
-Notably, the relativistic contributions of massless neutrinos and photon radiation, as well as the massive neutrino contribution are presently neglected. From these expressions, in \texttt{jc.background} where \texttt{jc} hereafter stands for \jaxcosmo, are computed the different cosmological distance functions. Notably, the radial comoving distance
+Notably, the relativistic contributions of massless neutrinos and photon radiation, as well as the massive neutrino contribution are presently neglected. From these expressions, in \texttt{jc.background}, are computed the different cosmological distance functions. Notably, the radial comoving distance
 \begin{equation}
      \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
      \label{eq:radial_comoving}
@@ -266,24 +265,27 @@ Currently, \jaxcosmo\  implements the \citet{Eisenstein_1998} transfer function 
 %
 \jaxcosmo\ is currently focused on predicting projected 2D Fourier-space 2pt galaxy lensing, clustering, and cross correlations, the $C_\ell$ angular power spectra that are a primary target of upcoming photometric surveys. The details of the implementation is in \texttt{jc.angular\_cl} which deals with the mean and Gaussian covariance matrix computations.
 
-To make a bridge to these observables, two \textit{pyTree} objects are implemented: \texttt{NumberCounts} and \texttt{WeakLensing} tracers for galaxy clustering and weak lensing samples, with each instance of each representing a single tomographic redshift bin's number density. These tracers are implemented according to the following kernel functions:
-\begin{itemize}
-    \item \textbf{NumberCounts}: 
+To make a bridge to these observables, two \textit{pyTree} objects are implemented: \texttt{NumberCounts} and \texttt{WeakLensing} tracers for galaxy clustering and weak lensing samples, with each instance of each representing a single tomographic redshift bin's number density. These tracers are implemented as two kernel functions:
+
+\begin{description}
+\item[\texttt{NumberCounts}]
     \begin{equation}
         K_i(z) = n_i(z)\ b(z)\ H(z)
     \end{equation}
-where $n_i(s)$ is the redshift distribution of the sample (eg. \texttt{jc.redshift.kde\_nz} function), $b(z)$ a galaxy bias function (see  \texttt{jc.bias.constant\_linear\_bias}). No redshift space distorsions are taken into account.
- \item \textbf{WeakLensing}:
+where $n_i(s)$ is the redshift distribution of the sample (eg. \texttt{jc.redshift.kde\_nz} function), $b(z)$ a galaxy bias function (see  \texttt{jc.bias.constant\_linear\_bias}). No redshift space distortions are taken into account.
+
+\item [\texttt{WeakLensing}]
     \begin{multline}
  K_i(z) = \left( \frac{3 H_0^2\Omega_m}{2 c} \right) \left(\frac{(\ell+2)!}{(\ell-2)!} \right)^{1/2}\times 
  \\  (1+z)\ \chi(z) \int_z^\infty p_i(z^\prime)\ \frac{\chi(z^\prime)-\chi(z)}{\chi(z^\prime)}\ dz^\prime + K_{IA}(z)
     \end{multline}
-where $K_{IA}(z)$ is an optional kernel function to deal with the Intrinsic Alignment. The current implementation follows the reference \citep{2011A&A...527A..26} according to
+where $K_{IA}(z)$ is an optional kernel function to deal with the Intrinsic Alignment. The implementation of this term currently follows \citet{2011A&A...527A..26J}, and is given by:
 \begin{equation}
-    K_{IA}(z) =   \left(\frac{(\ell+2)!}{(\ell-2)!}\right)^{1/2}\ p_i(z) b(z) H(z)\ \frac{C \Omega_m}{D(z)}
+    K_{IA}(z) =   \left(\frac{(\ell+2)!}{(\ell-2)!}\right)^{1/2}\ p_i(z)\ b(z)\  H(z)\ \frac{C\  \Omega_m}{D(z)}
 \end{equation}
-with $C\approx 0.0134$ a constant without unit and $D(z)$ the growth factor of perturbations.
-\end{itemize}
+with $C\approx 0.0134$ a dimensionless constant and $D(z)$ the growth factor of linear perturbations.
+\end{description}
+
 Notice that all described kernel functions can be also viewed as function of the scale factor $a$ or as function of the radial comoving distance $\chi$. 
 
 From these tracer objects, the angular power spectra $C_\ell^{ij}$ for the probes $(i,j)$ and for redshift bin window selections are computed in the first order Limber approximation \citep{PhysRevD.78.123506}:
@@ -309,12 +311,13 @@ Remarkably, all the integrals involved in these computations can be  differentia
 %
 \subsection{Validation against the Core Cosmology Library (CCL)}
 %
-To illustrate the different features available with the present version of the library (\jaxcosmo\ \texttt{0.1rc9}), we have written a  companion notebook \nblink{CCL_comparison} to make a comparison with the well-established  Core Cosmology Library \citep{2019ApJS..242....2C} \footnote{https://ccl.readthedocs.io, version \texttt{2.5.1}.}. As examples, the Figures \ref{fig:chi_comparison},
+To illustrate the different features available with the present version of the library (\jaxcosmo\ \texttt{0.1rc9}, which is available in the Python Package Index PyPI\footnote{\url{https://pypi.org/}}), we have written a  companion notebook \nblink{CCL_comparison} to make a comparison with the well-established  Core Cosmology Library \citep{2019ApJS..242....2C}\footnote{https://ccl.readthedocs.io, version \texttt{2.5.1}.}. As examples, the Figures \ref{fig:chi_comparison},
 \ref{fig:halofit_comparison} and \ref{fig:Cell_comparison}
-show the radial comoving distance (Eq.~\ref{eq:radial_comoving}), the non linear matter power spectrum computation using the \texttt{halofit} fitting function and the angular power spectrum (Eq.~\ref{eq:Cell_limber}) using the correlation between the \texttt{NumberCounts} and \texttt{WeakLensing} kernel functions. The relative differences between the two libraries are at the level of few $10^{-3}$ or better.
- These observed numerical differences are mostly due to different choices of integration methods and accuracy parameters (eg. quadrature number of points). Increasing these parameters lead to performance degradation as for instance for \jaxcosmo\ this increases the XLA compilation memory storage especially for the angular power spectra computation. So, the authors have made compromise and the numerical applications detailed in the following sections are done with the \jaxcosmo\ version available via \texttt{PyPi}\footnote{https://github.com/pypa/pip}.
-%\JZ{Show more plots from the notebook here. Also, show a relative error plot between the two. As Tim Eifler once said to me, ``Any codes can agree when you plot them over four orders of magnitude''.}
-%
+show the radial comoving distance (Eq.~\ref{eq:radial_comoving}), the non linear matter power spectrum computation using the \texttt{halofit} fitting function and the angular power spectrum for galaxy-galaxy lensing (Eq.~\ref{eq:Cell_limber}) using the \texttt{NumberCounts} and \texttt{WeakLensing} kernel functions. The relative differences between the two libraries are at the level of few $10^{-3}$ or better.
+
+These numerical differences are mostly due to different choices of integration methods and accuracy parameters (eg. quadrature number of points). Increasing these parameters lead to performance degradation for \jaxcosmo\ as it increases the XLA compilation memory requirements significantly, especially for the angular power spectra computation. Since these differences are likely to be within the tolerance of the current generation of cosmological surveys, this trade-off is an acceptable one.
+ 
+
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{figures/comp_radial_com_dist.png}
