@@ -307,8 +307,16 @@ Finally, the factors $m_i$ are equal to $(0,-2)$ for the \textbf{NumberCounts}, 
 Remarkably, all the integrals involved in these computations can be  differentiated with respect to the cosmological parameters thanks to \textit{autodiff} and the implementation of the above mentioned integration quadrature.  An example is given in the context of DES Y1 3x2pts analysis (Appendix~\ref{app-DESY1}).
 %
 \subsection{Validation against the Core Cosmology Library (CCL)}
-To illustrate the different features available with the present version of the library, we have written a  companion notebook \nblink{CCL_comparison} to make a comparison with the well-established  Core Cosmology Library. As an example, the Figure~\ref{fig:halofit_comparison} shows an example of the non linear matter power spectrum computation using the \texttt{halofit} fitting function. \JZ{Show more plots from the notebook here. Also, show a relative error plot between the two. As Tim Eifler once said to me, ``Any codes can agree when you plot them over four orders of magnitude''.}
+To illustrate the different features available with the present version of the library, we have written a  companion notebook \nblink{CCL_comparison} to make a comparison with the well-established  Core Cosmology Library. As examples, the Figures \ref{fig:chi_comparison},
+\ref{fig:halofit_comparison}
+shows an example of the non linear matter power spectrum computation using the \texttt{halofit} fitting function. \JZ{Show more plots from the notebook here. Also, show a relative error plot between the two. As Tim Eifler once said to me, ``Any codes can agree when you plot them over four orders of magnitude''.}
 %
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/comp_radial_com_dist.png}
+    \caption{Comparison of the radial comoving distance between CCL and \jaxcosmo.} 
+    \label{fig:chi_comparison}
+\end{figure}
 \begin{figure}[ht]
     \centering
     \includegraphics[width=\columnwidth]{figures/halofit_pk.png}
