@@ -351,7 +351,7 @@ These numerical differences are mostly due to different choices of integration m
 
 
 \subsection{Instantaneous Fisher Forecasts}
-In this section, we illustrate with a purely fictional case study, the computation of the Fisher matrix by two methods thanks to the \textit{autodiff} ability of JAX. For the detailed implementation, the reader is invited to have a look at the following companion notebook \nblink{Simple-Fisher}. In this use-case we use four tracers redshift distributions: two to define \texttt{WeakLensing} kernels and two for \texttt{NumberCounts} kernels. Then, the $10$ angular power spectra $C_\ell^{i,j}$ ($i,j:1,\dots,4$) are computed for $50$  logarithmically spaced angular moments between $10$ and $1000$ using Equation \ref{eq:Cell_limber}. The Gaussian covariance matrix is computed simultaneously. A dataset is obtained from the computation of the $C_\ell^{i,j}$ with a fiducial cosmology. Then, the following snippet shows the log likelihood function $\mathcal{L}(\theta)$ implementation ($\theta$ stands for the set of cosmological parameters). The \texttt{jax.jit} decorator is there to build a compiled version of the function at the first use. 
+In this section, we illustrate with a purely fictional case study, the computation of the Fisher matrix by two methods thanks to the \textit{autodiff} ability of JAX. For the detailed implementation, the reader is invited to have a look at the following companion notebook \nblink{Simple-Fisher}. In this use-case we use four tracers redshift distributions: two to define \texttt{WeakLensing} kernels and two for \texttt{NumberCounts} kernels. Then, the $10$ angular power spectra $C_\ell^{i,j}$ ($i,j:1,\dots,4$) are computed for $50$  logarithmically spaced angular moments between $10$ and $1000$ using Equation \ref{eq:Cell_limber}. The Gaussian covariance matrix is computed simultaneously. A dataset is obtained from the computation of the $C_\ell^{i,j}$ with a fiducial cosmology. Then, the following snippet shows the log likelihood function $\mathcal{L}(\theta)$ implementation considering a constant covariance matrix ($\theta$ stands for the set of cosmological parameters). 
 %\begin{minted}[fontsize=\footnotesize]{python}
 \begin{lstlisting}[language=iPython]
 @jax.jit
@@ -368,10 +368,11 @@ def likelihood(p):
     return -0.5 * r.T @ jc.sparse.sparse_dot_vec(P, r)
 \end{lstlisting}
 %\end{minted}
-The goal is to obtain the 1-sigma contour forecast of the two parameters ($\Omega_c, \sigma_8$). To do so, we use the Fisher matrix computation. One way is to use the Hessian of the log-likelihood as follows
+The \texttt{jc.sparse} functions are implementation of block matrix computations: sparse matrix is represented as a 3D array of shape $(n_y, n_x, n_diag)$ composed of $n_y \times n_x$ square blocks of size $n_{diag} \times n_{diag}$.  The \texttt{jax.jit} decorator is there to build a compiled version of the function at the first use. The goal is to obtain the 1-sigma contour forecast of the two parameters ($\Omega_c, \sigma_8$). To do so, we use the Fisher matrix computation. One way is to use the Hessian of the log-likelihood as follows
 \begin{equation}
-F_{\alpha\beta} = -\big\langle \frac{\partial^2\mathcal{L}(\theta)}{\partial \theta_\alpha \partial \theta_\beta}\big\rangle
+F_{\alpha\beta} = - \frac{\partial^2\mathcal{L}(\theta)}{\partial \theta_\alpha \partial \theta_\beta}
 \qquad (\theta_\alpha=\Omega_c, \theta_\beta=\sigma_8)
+\label{eq:fisher_way1}
 \end{equation}
 which is mostly  1-line JAX code
 \begin{lstlisting}[language=iPython]
@@ -381,13 +382,24 @@ F = - hessian_loglik(params)
 An other way uses the computation of the Fisher matrix when the likelihood is a Gaussian distribution as ii is the case above. First, we define a function that computes the mean  $\mu(\ell; \theta)$, and it follows that the Fisher matrix element reads
 \begin{equation}
     F_{\alpha\beta} = \sum_\ell \frac{\partial \mu(\ell)}{\partial \theta_\alpha}^T C^{-1}(\ell)\frac{\partial \mu(\ell)}{\partial \theta_\beta}
+    \label{eq:fisher_way2}
 \end{equation}
-where $C^{-1}(\ell)$ is the covariance matrix computed with the fiduccial cosmology.
+where $C^{-1}(\ell)$ is the covariance matrix computed with the fiducial cosmology. In this case one needs also just 1-line of JAX code 
+\begin{lstlisting}[language=iPython]
+F = jc.sparse.dot(dmu.T, jc.sparse.inv(cov), dmu)
+\end{lstlisting}
 
-% Plot showing error in Jacobian computation by finite diff
+The two methods agree perfectly as shown on Figure \ref{fig:simple_fisher_1}.
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{figures/simple_fisher_1.png}
+    \caption{Comparison of the two methods to compute the Fisher matrix (Eqs.\ref{eq:fisher_way1},\ref{eq:fisher_way2}).} 
+    \label{fig:simple_fisher_1}
+\end{figure}
+%
+It is worth to notice that in the two above methods of Fisher matrix computations, the user does not need to take care of particular parameter to compute the 1st or 2nd order derivatives. This is in contrast to the cases where one deals with finite difference methods. AS an illustration, we have used the CCL library to compute the Fisher matrix via Equation \ref{eq:fisher_way2}. To do so, the Jacobian ($\partial \mu/\partial\theta_\alpha$) is computed with centered  order 4 finite differences available in the \texttt{Numdifftools} Python package\footnote{\url{https://numdifftools.readthedocs.io}}. Using the spacing parameter values ($10^{-6}$, $10^{-2}$, $10^{-1}$) one gets the 1-sigma contours
 
-% Plot showing error on some parameters
-
+%
 \subsection{Survey Optimization by FoM Maximization}
 \label{sec-FOM-optimisation}
 % Needs to mention the tomo challenge, mention that we can backpropagate through a NN and the cosmology model
