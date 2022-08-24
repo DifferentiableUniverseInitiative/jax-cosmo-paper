@@ -392,13 +392,18 @@ F = jc.sparse.dot(dmu.T, jc.sparse.inv(cov), dmu)
 The two methods agree perfectly as shown on Figure \ref{fig:simple_fisher_1}.
 \begin{figure}
     \centering
-    \includegraphics[width=\columnwidth]{figures/simple_fisher_1.png}
+    \includegraphics[width=0.7\columnwidth]{figures/simple_fisher_1.png}
     \caption{Comparison of the two methods to compute the Fisher matrix (Eqs.\ref{eq:fisher_way1},\ref{eq:fisher_way2}).} 
     \label{fig:simple_fisher_1}
 \end{figure}
 %
-It is worth to notice that in the two above methods of Fisher matrix computations, the user does not need to take care of particular parameter to compute the 1st or 2nd order derivatives. This is in contrast to the cases where one deals with finite difference methods. AS an illustration, we have used the CCL library to compute the Fisher matrix via Equation \ref{eq:fisher_way2}. To do so, the Jacobian ($\partial \mu/\partial\theta_\alpha$) is computed with centered  order 4 finite differences available in the \texttt{Numdifftools} Python package\footnote{\url{https://numdifftools.readthedocs.io}}. Using the spacing parameter values ($10^{-6}$, $10^{-2}$, $10^{-1}$) one gets the 1-sigma contours
-
+It is worth to notice that in the two above methods of Fisher matrix computations, the user does not need to take care of particular parameter to compute the 1st or 2nd order derivatives. This is in contrast to the cases where one deals with finite difference methods. AS an illustration, we have used the CCL library to compute the Fisher matrix via Equation \ref{eq:fisher_way2}. To do so, the Jacobian ($\partial \mu/\partial\theta_\alpha$) is computed with centered  order 4 finite differences available in the \texttt{Numdifftools} Python package\footnote{\url{https://numdifftools.readthedocs.io}}. Using the spacing parameter values ($10^{-6}$, $10^{-2}$, $10^{-1}$) one obtains three different approximation of the 1-sigma contours as shown on Figure \ref{fig:simple_fisher_2}. One notices that the contour that agrees quite well with the \jaxcosmo\ one, is obtained with the spacing parameter equals to $10^{-2}$ which implies that the user has to  tune this parameter carefully. Although very simple, this case study exhibits the intrinsic limitation of finite difference methods for computing the Fisher matrix as it as been shown for instance in a more advanced case study in reference \citet{2021arXiv210100298B}.
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{figures/simple_fisher_2.png}
+    \caption{Computations of the Fisher matrix (Eq.\ref{eq:fisher_way1}) using the CCL library for the angular power spectra estimation and finite difference method to get the Jacobian  with different spacing parameters ($10^{-6}$, $10^{-2}$, $10^{-1}$). For comparison, the contour obtained with \jaxcosmo\ is reproduced from Figure \ref{fig:simple_fisher_1} in black.} 
+    \label{fig:simple_fisher_2}
+\end{figure}
 %
 \subsection{Survey Optimization by FoM Maximization}
 \label{sec-FOM-optimisation}
