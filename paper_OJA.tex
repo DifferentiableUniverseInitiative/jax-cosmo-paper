@@ -311,7 +311,7 @@ Remarkably, all the integrals involved in these computations can be  differentia
 %
 \subsection{Validation against the Core Cosmology Library (CCL)}
 %
-To illustrate the different features available with the present version of the library (\jaxcosmo\ \texttt{0.1rc9}, which is available in the Python Package Index PyPI\footnote{\url{https://pypi.org/}}), we have written a  companion notebook \nblink{CCL_comparison} to make a comparison with the well-established  Core Cosmology Library \citep{2019ApJS..242....2C}\footnote{https://ccl.readthedocs.io, version \texttt{2.5.1}.}. As examples, the Figures \ref{fig:chi_comparison},
+To illustrate the different features available with the present version of the library (\jaxcosmo\ \texttt{0.1rc9}, which is available in the Python Package Index PyPI\footnote{\url{https://pypi.org/}}), we have written a  companion notebook \nblink{CCL_comparison} to make a comparison with the well-established  Core Cosmology Library \citep{2019ApJS..242....2C}\footnote{\url{https://ccl.readthedocs.io}, version \texttt{2.5.1}.}. As examples, the Figures \ref{fig:chi_comparison},
 \ref{fig:halofit_comparison} and \ref{fig:Cell_comparison}
 show the radial comoving distance (Eq.~\ref{eq:radial_comoving}), the non linear matter power spectrum computation using the \texttt{halofit} fitting function and the angular power spectrum for galaxy-galaxy lensing (Eq.~\ref{eq:Cell_limber}) using the \texttt{NumberCounts} and \texttt{WeakLensing} kernel functions. The relative differences between the two libraries are at the level of few $10^{-3}$ or better.
 
@@ -351,26 +351,38 @@ These numerical differences are mostly due to different choices of integration m
 
 
 \subsection{Instantaneous Fisher Forecasts}
-
+In this section, we illustrate with a purely fictional case study, the computation of the Fisher matrix by two methods thanks to the \textit{autodiff} ability of JAX. For the detailed implementation, the reader is invited to have a look at the following companion notebook \nblink{Simple-Fisher}. In this use-case we use four tracers redshift distributions: two to define \texttt{WeakLensing} kernels and two for \texttt{NumberCounts} kernels. Then, the $10$ angular power spectra $C_\ell^{i,j}$ ($i,j:1,\dots,4$) are computed for $50$  logarithmically spaced angular moments between $10$ and $1000$ using Equation \ref{eq:Cell_limber}. The Gaussian covariance matrix is computed simultaneously. A dataset is obtained from the computation of the $C_\ell^{i,j}$ with a fiducial cosmology. Then, the following snippet shows the log likelihood function $\mathcal{L}(\theta)$ implementation ($\theta$ stands for the set of cosmological parameters). The \texttt{jax.jit} decorator is there to build a compiled version of the function at the first use. 
 %\begin{minted}[fontsize=\footnotesize]{python}
 \begin{lstlisting}[language=iPython]
-def likelihood(cosmo):
-  # Compute mean and covariance of angular Cls, 
-  # for specific probes
-  mu, cov = gaussian_cl_covariance_and_mean(cosmo, 
-                    ell, probes)
-  # Return likelihood value
-  return gaussian_log_likelihood(data, mu, cov)
-
-# Compute derivatives of the likelihood with 
-# respect to cosmological parameters
-g = jax.grad(likelihood)(cosmo)
-
-# Compute Fisher matrix of cosmological 
-# parameters
-F = -jax.hessian(likelihood)(cosmo)
+@jax.jit
+def likelihood(p):
+    # Create a new cosmology at these parameters
+    cosmo = jc.Planck15(Omega_c=p[0], sigma8=p[1])
+    # Compute mean and covariance of angular Cls
+    mu, C = jc.angular_cl.gaussian_cl_covariance_and_mean(cosmo, ell, tracers, sparse=True)
+    # Return likelihood value assuming constant covariance, so we stop the gradient
+    # at the level of the precision matrix, and we will not include the logdet term
+    # in the likelihood
+    P = jc.sparse.inv(jax.lax.stop_gradient(C))
+    r = data - mu
+    return -0.5 * r.T @ jc.sparse.sparse_dot_vec(P, r)
 \end{lstlisting}
 %\end{minted}
+The goal is to obtain the 1-sigma contour forecast of the two parameters ($\Omega_c, \sigma_8$). To do so, we use the Fisher matrix computation. One way is to use the Hessian of the log-likelihood as follows
+\begin{equation}
+F_{\alpha\beta} = -\big\langle \frac{\partial^2\mathcal{L}(\theta)}{\partial \theta_\alpha \partial \theta_\beta}\big\rangle
+\qquad (\theta_\alpha=\Omega_c, \theta_\beta=\sigma_8)
+\end{equation}
+which is mostly  1-line JAX code
+\begin{lstlisting}[language=iPython]
+hessian_loglik = jax.jit(jax.hessian(likelihood))
+F = - hessian_loglik(params)
+\end{lstlisting}
+An other way uses the computation of the Fisher matrix when the likelihood is a Gaussian distribution as ii is the case above. First, we define a function that computes the mean  $\mu(\ell; \theta)$, and it follows that the Fisher matrix element reads
+\begin{equation}
+    F_{\alpha\beta} = \sum_\ell \frac{\partial \mu(\ell)}{\partial \theta_\alpha}^T C^{-1}(\ell)\frac{\partial \mu(\ell)}{\partial \theta_\beta}
+\end{equation}
+where $C^{-1}(\ell)$ is the covariance matrix computed with the fiduccial cosmology.
 
 % Plot showing error in Jacobian computation by finite diff
 
