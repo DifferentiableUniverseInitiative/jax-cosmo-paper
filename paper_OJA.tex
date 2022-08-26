@@ -421,19 +421,43 @@ Fisher forecasts are also commonly used in survey and analysis strategy strategy
 \FrL{Here we can implement MOPED for the compression}
 
 Once the Fisher matrix can be safely estimated, one can use the MOPED\footnote{Massively Optimised Parameter Estimation and Data compres-
-sion} algorithm \citep{2000MNRAS.317..965H,2016PhRvD..93h3525Z, 2017MNRAS.472.4244H}. In the case of the constant covariance matrix the algorithm leads to a  lossless compression which reduces possibly large data vector $x$ (eg. the $N=500$ $C_\ell^{p,q}$ values in the previous section) to $M$ numbers, where $M$ is the number of parameters $\theta_\alpha$ considered (eg. $M=2$ in the previous section). The algorithm computes by iteration $M$ orthogonal vectors of size $N$ such that (taking the notation of the previous section)
+sion} algorithm \citep{2000MNRAS.317..965H,2016PhRvD..93h3525Z, 2017MNRAS.472.4244H}. In the case of the constant covariance matrix the algorithm leads to a  lossless compression which reduces possibly large data vector $x$ of size $N$ to $M$ numbers, where $M$ is the number of parameters $\theta_i$ considered. For instance, in the previous section, $N=500$ as $x=(C_\ell^{p,q})$ and $M=2$ for $(\Omega_c,\sigma_8)$. The algorithm computes by iteration $M$ vectors of size $N$ such that (taking the notation of the previous section)
 \begin{equation}
     b_i = \frac{C^{-1}\mu_{,i}-\sum_{j=1}^{i-1}(\mu_{,j}^T b_j)b_j}{\sqrt{F_{i,i}-\sum_{j=1}^{i-1}(\mu_{,j}^T b_j)^2}}
 \end{equation}
-where $\mu_{,i}=\partial \mu/\partial \theta_i$ ($i=1,\dots,M$). The vectors $b_i$, $b_j$ satisfy the following orthogonality constraint
+where $\mu_{,i}=\partial \mu/\partial \theta_i$ ($i=1,\dots,M$). The vectors $(b_i)_{i\leq M}$ satisfy the following orthogonality constraint
 \begin{equation}
     b_i^T C b_j = \delta_{i,j}
 \end{equation}
-and in turn from the data vector $x=(C_\ell^{p,q})_{p,q,\ell}$ one defines the compressed data set composed of $M$ numbers $(y_i)_{i\leq M}$ according to
+The algorithm is similar to the Gram-Schmidt process with a constant covariance matrix $C$to define the scalar product $\langle b_i, b_j\rangle$. Then, the original data set $x=(C_\ell^{p,q})_{p,q,\ell}$ is compressed in a data set composed of $M$ numbers $(y_i)_{i\leq M}$ according to
 \begin{equation}
     y_i = b_i^T x
 \end{equation}
-These numbers are uncorrelated and of unit variance and $(y_i)_{i\leq M}$ is a set of sufficient statistic for the set of parameters $(\theta_i)_{i\leq M}$. The case where the covariant matrix depends upon the parameters is discussed by  \citet{2017MNRAS.472.4244H}
+These numbers are uncorrelated and of unit variance and $(y_i)_{i\leq M}$ is a set of sufficient statistic for the set of parameters $(\theta_i)_{i\leq M}$, $y_i$ contains the maximum information about the parameter $\theta_i$.The case where the covariant matrix depends upon the parameters is discussed by  \citet{2017MNRAS.472.4244H}.
+
+The net gain of MOPED algorithm is to eliminate the need of large covariance matrix inversion of size $N\times N$ requiring $O(N^3)$ operations. This inversion takes place not only for the Fisher matrix computation (Eq.~\ref{eq:fisher_way2}, but more importantly in the log-likelihood computation (see the snippet of the previous section). The MOPED algorithm reduces the complexity to $O(M)$ operations. 
+
+To give an illustration here is a snippet that use the mock data set and the results of the Fisher matrix computation as in the previous section, to get the MOPED compressed data set composed of two numbers $(y_0,y_1)$ with maximal information on $(Omega_c, \sigma_8)$ respectively:  
+\begin{lstlisting}[language=iPython]
+# Orthogonal vectors
+b0 = jc.sparse.dot(C_inv,dmu[:,0])/jax.numpy.sqrt(F[0,0])
+a = dmu[:,1].T @ b0
+b1 = (jc.sparse.dot(C_inv,dmu[:,1]) - a * b0)/jax.numpy.sqrt(F[1,1]-a*a)
+# MOPED vector
+y0 = b0.T @ data
+y1 = b1.T @ data
+\end{lstlisting}
+Then, the log-likelihood can easily be implemented as followed
+\begin{lstlisting}[language=iPython]
+@jax.jit
+def compress_likelihood(p):
+    # Create a new cosmology at these parameters
+    cosmo = jc.Planck15(Omega_c=p[0], sigma8=p[1])
+    # Compute mean Cl
+    mu = jc.angular_cl.angular_cl(cosmo, ell, tracers).flatten()
+    # likelihood using the MOPED vector
+    return -0.5 * ((y0 - b0.T @ mu)**2 + (y1 - b1.T @ mu)**2)
+\end{lstlisting}
 %
 \section{Application: Classical Hamiltonian Monte Carlo}
 \label{sec:chmc}
