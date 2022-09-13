@@ -351,7 +351,7 @@ These numerical differences are mostly due to different choices of integration m
 
 
 \subsection{Instantaneous Fisher Forecasts}
-In this section, we illustrate with a purely fictional case study, the computation of the Fisher matrix \citep{1997ApJ...480...22T,Stuart1991} by two methods thanks to the \textit{autodiff} ability of JAX. For the detailed implementation, the reader is invited to have a look at the following companion notebook \nblink{Simple-Fisher}. In this use-case we use four tracers redshift distributions: two to define \texttt{WeakLensing} kernels and two for \texttt{NumberCounts} kernels. Then, the $10$ angular power spectra $C_\ell^{p,q}$ ($p,q:1,\dots,4$) are computed for $50$  logarithmically spaced angular moments between $10$ and $1000$ using Equation \ref{eq:Cell_limber}. The Gaussian covariance matrix is computed simultaneously. A dataset is obtained from the computation of the $C_\ell^{p,q}$ with a fiducial cosmology. Then, the following snippet shows the log likelihood function $\mathcal{L}(\theta)$ implementation considering a constant covariance matrix ($\theta$ stands for the set of cosmological parameters). 
+In this section, we illustrate, with a purely fictional case study, the computation of a Fisher matrix \citep{1997ApJ...480...22T,Stuart1991} using two methods with the \textit{autodiff} ability of JAX. For the detailed implementation, the reader is invited to look at the following companion notebook \nblink{Simple-Fisher}. In this example we use four tracer redshift distributions: two to define \texttt{WeakLensing} kernels and two for \texttt{NumberCounts} kernels. Then, the $10$ angular power spectra $C_\ell^{p,q}$ ($p,q:1,\dots,4$) are computed for $50$  logarithmically-spaced angular moments between $\ell=10$ and $\ell=1000$ using Equation \ref{eq:Cell_limber}. The Gaussian covariance matrix is computed simultaneously. A dataset is obtained from the computation of the $C_\ell^{p,q}$ with a fiducial cosmology. Then, the following snippet shows the log likelihood function $\mathcal{L}(\theta)$ implementation considering a constant covariance matrix ($\theta$ stands for the set of cosmological parameters). 
 %\begin{minted}[fontsize=\footnotesize]{python}
 \begin{lstlisting}[language=iPython]
 @jax.jit
@@ -368,28 +368,32 @@ def likelihood(p):
     return -0.5 * r.T @ jc.sparse.sparse_dot_vec(P, r)
 \end{lstlisting}
 %\end{minted}
-The \texttt{jc.sparse} functions are implementation of block matrix computations: sparse matrix is represented as a 3D array of shape $(n_y, n_x, n_{diag})$ composed of $n_y \times n_x$ square blocks of size $n_{diag} \times n_{diag}$.  The \texttt{jax.jit} decorator is there to build a compiled version of the function at the first use. The goal is to obtain the 1-sigma contour forecast of the two parameters ($\Omega_c, \sigma_8$). To do so, we use the Fisher matrix computation. One way is to use the Hessian of the log-likelihood as follows
+The \texttt{jc.sparse} functions are implementation of block matrix computations: a sparse matrix is represented as a 3D array of shape $(n_y, n_x, n_{diag})$ composed of $n_y \times n_x$ square blocks of size $n_{diag} \times n_{diag}$.  The \texttt{jax.jit} decorator builds a compiled version of the function at the first use. 
+
+The first approach to obtaining approximate 1-sigma contours of the two parameters ($\Omega_c, \sigma_8$) with aa Fisher matrix uses the Hessian of the log-likelihood as follows:
 \begin{equation}
 F_{i,j} = - \frac{\partial^2\mathcal{L}(\theta)}{\partial \theta_i \partial \theta_j}
 \qquad (\theta_1=\Omega_c, \theta_2=\sigma_8)
 \label{eq:fisher_way1}
 \end{equation}
-which is mostly  1-line JAX code
+which is accomplished in two lines of JAX code:
 \begin{lstlisting}[language=iPython]
-hessian_loglik = jax.jit(jax.hessian(likelihood))
-F = - hessian_loglik(params)
+hessian_loglike = jax.jit(jax.hessian(likelihood))
+F = - hessian_loglike(params)
 \end{lstlisting}
-An other way uses the computation of the Fisher matrix when the likelihood is a Gaussian distribution as ii is the case above. First, we define a function that computes the mean  $\mu(\ell; \theta)$, and it follows that the Fisher matrix element reads
+
+The second approach to computing the Fisher matric, which is restricted to Gaussian likelihoods but is more commonly used in the field because of its numerical stability, is to define a function that computes the observable mean  $\mu(\ell; \theta)$; it follows that the Fisher matrix elements are
 \begin{equation}
     F_{i,j} = \sum_\ell \frac{\partial \mu(\ell)}{\partial \theta_i}^T C^{-1}(\ell)\frac{\partial \mu(\ell)}{\partial \theta_j}
     \label{eq:fisher_way2}
 \end{equation}
-where $C^{-1}(\ell)$ is the covariance matrix computed with the fiducial cosmology. In this case one needs also just 1-line of JAX code 
+where $C^{-1}(\ell)$ is the covariance matrix computed with the fiducial cosmology. This can also be simply computed in JAX: 
 \begin{lstlisting}[language=iPython]
 F = jc.sparse.dot(dmu.T, jc.sparse.inv(cov), dmu)
 \end{lstlisting}
+\JZ{dmu in the above is not defined anywhere}
 
-The two methods agree perfectly as shown on Figure \ref{fig:simple_fisher_1}.
+JAX implementations of the two methods agree to near perfect accuracy, as shown in Figure \ref{fig:simple_fisher_1}.
 \begin{figure}
     \centering
     \includegraphics[width=0.7\columnwidth]{figures/simple_fisher_1.png}
@@ -397,13 +401,15 @@ The two methods agree perfectly as shown on Figure \ref{fig:simple_fisher_1}.
     \label{fig:simple_fisher_1}
 \end{figure}
 %
-It is worth to notice that in the two above methods of Fisher matrix computations, the user does not need to take care of particular parameter to compute the 1st or 2nd order derivatives. This is in contrast to the cases where one deals with finite difference methods. AS an illustration, we have used the CCL library to compute the Fisher matrix via Equation \ref{eq:fisher_way2}. To do so, the Jacobian ($\partial \mu/\partial\theta_\alpha$) is computed with centered  order 4 finite differences available in the \texttt{Numdifftools} Python package\footnote{\url{https://numdifftools.readthedocs.io}}. Using the spacing parameter values ($10^{-6}$, $10^{-2}$, $10^{-1}$) one obtains three different approximation of the 1-sigma contours as shown on Figure \ref{fig:simple_fisher_2}. One notices that the contour that agrees quite well with the \jaxcosmo\ one, is obtained with the spacing parameter equals to $10^{-2}$ which implies that the user has to  tune this parameter carefully. Although very simple, this case study exhibits the intrinsic limitation of finite difference methods for computing the Fisher matrix as it as been shown for instance in a more advanced case study in reference \citet{2021arXiv210100298B}.
+It is worth noting that in the two methods for Fisher matrix computations described above, the user does not need to vary individual parameter values to compute the 1st or 2nd order derivatives; this is in contrast to the usual finite difference methods. As an illustration, we have used the CCL library to compute the Fisher matrix via Equation \ref{eq:fisher_way2}. To do so, the Jacobian ($\partial \mu/\partial\theta_\alpha$) is computed with centered  order 4 finite differences available in the \texttt{Numdifftools} Python package\footnote{\url{https://numdifftools.readthedocs.io}}. Using the parameter values spaced by ($10^{-6}$, $10^{-2}$, $10^{-1}$) one obtains three different approximation of the 1-sigma contours as shown on Figure \ref{fig:simple_fisher_2}. The contour that agrees best with the \jaxcosmo\ method is obtained with the intermediate spacing parameter $10^{-2}$, implying that the user must tune this parameter carefully. Although very simple, this case study exhibits a significant challenge of finite difference methods for computing the Fisher matrix as has been shown for instance in a more advanced case study in \citet{2021arXiv210100298B}. \JZ{Should probably latex the step sizes $10^{-1}, 10^{-2}, 10^{-6}$ in the figure legend}
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{figures/simple_fisher_2.png}
-    \caption{Computations of the Fisher matrix (Eq.\ref{eq:fisher_way1}) using the CCL library for the angular power spectra estimation and finite difference method to get the Jacobian  with different spacing parameters ($10^{-6}$, $10^{-2}$, $10^{-1}$). For comparison, the contour obtained with \jaxcosmo\ is reproduced from Figure \ref{fig:simple_fisher_1} in black.} 
+    \caption{Fisher matrices (Eq.\ref{eq:fisher_way1}) estimated using the CCL for the angular power spectra estimation and finite difference method to get the Jacobian  with different spacing of parameters ($10^{-6}$, $10^{-2}$, $10^{-1}$). For comparison, the contour obtained with \jaxcosmo\ is reproduced from Figure \ref{fig:simple_fisher_1} in black.} 
     \label{fig:simple_fisher_2}
 \end{figure}
+
+
 %
 \subsection{Survey Optimization by FoM Maximization}
 \label{sec-FOM-optimisation}
@@ -421,7 +427,7 @@ Fisher forecasts are also commonly used in survey and analysis strategy strategy
 \FrL{Here we can implement MOPED for the compression}
 
 Once the Fisher matrix can be safely estimated, one can use the MOPED\footnote{Massively Optimised Parameter Estimation and Data compres-
-sion} algorithm \citep{2000MNRAS.317..965H,2016PhRvD..93h3525Z, 2017MNRAS.472.4244H}. In the case of the constant covariance matrix the algorithm leads to a  lossless compression which reduces possibly large data vector $x$ of size $N$ to $M$ numbers, where $M$ is the number of parameters $\theta_i$ considered. For instance, in the previous section, $N=500$ as $x=(C_\ell^{p,q})$ and $M=2$ for $(\Omega_c,\sigma_8)$. The algorithm computes by iteration $M$ vectors of size $N$ such that (taking the notation of the previous section)
+sion} algorithm \citep{2000MNRAS.317..965H,2016PhRvD..93h3525Z, 2017MNRAS.472.4244H}. In the case of the constant covariance matrix the algorithm compresses data in a way that is lossless at the Fisher matrix level (i.e. Fisher matrices estimated using the compressed and full data are identical, by construction)  which reduces a possibly large data vector $x$ of size $N$ to $M$ numbers, where $M$ is the number of parameters $\theta_i$ considered. For instance, in the previous section, $N=500$ as $x=(C_\ell^{p,q})$ and $M=2$ for $(\Omega_c,\sigma_8)$. The algorithm computes by iteration $M$ vectors of size $N$ such that (taking the notation of the previous section)
 \begin{equation}
     b_i = \frac{C^{-1}\mu_{,i}-\sum_{j=1}^{i-1}(\mu_{,j}^T b_j)b_j}{\sqrt{F_{i,i}-\sum_{j=1}^{i-1}(\mu_{,j}^T b_j)^2}}
 \end{equation}
@@ -429,25 +435,25 @@ where $\mu_{,i}=\partial \mu/\partial \theta_i$ ($i=1,\dots,M$). The vectors $(b
 \begin{equation}
     b_i^T C b_j = \delta_{i,j}
 \end{equation}
-The algorithm is similar to the Gram-Schmidt process with a constant covariance matrix $C$to define the scalar product $\langle b_i, b_j\rangle$. Then, the original data set $x=(C_\ell^{p,q})_{p,q,\ell}$ is compressed in a data set composed of $M$ numbers $(y_i)_{i\leq M}$ according to
+The algorithm is similar to the Gram-Schmidt process, using the constant covariance matrix $C$ to define the scalar product $\langle b_i, b_j\rangle$. Then, the original data set $x=(C_\ell^{p,q})_{p,q,\ell}$ is compressed in a data set composed of $M$ numbers $(y_i)_{i\leq M}$ according to
 \begin{equation}
     y_i = b_i^T x
 \end{equation}
-These numbers are uncorrelated and of unit variance and $(y_i)_{i\leq M}$ is a set of sufficient statistic for the set of parameters $(\theta_i)_{i\leq M}$, $y_i$ contains the maximum information about the parameter $\theta_i$.The case where the covariant matrix depends upon the parameters is discussed by  \citet{2017MNRAS.472.4244H}.
+These numbers are uncorrelated and of unit variance and $(y_i)_{i\leq M}$ is a set of sufficient statistics for the set of parameters $(\theta_i)_{i\leq M}$, $y_i$ contains the maximum information about the parameter $\theta_i$. \JZ{I don't think this is true beyond the quadratic approximation to the log posterior - in particular I don't think these are a sufficient statistic for the full data set. If they were SS's then the curves in fig 6 would be identical.}
 
-The net gain of MOPED algorithm is to eliminate the need of large covariance matrix inversion of size $N\times N$ requiring $O(N^3)$ operations. This inversion takes place not only for the Fisher matrix computation (Eq.~\ref{eq:fisher_way2}, but more importantly in the log-likelihood computation (see the snippet of the previous section). The MOPED algorithm reduces the complexity to $O(M)$ operations. 
+The net gain of MOPED algorithm is to eliminate the need of large covariance matrix inversion of size $N\times N$ requiring $O(N^3)$ operations. This inversion takes place not only for the Fisher matrix computation (Eq.~\ref{eq:fisher_way2}, but more importantly in the log-likelihood computation (see the snippet of the previous section). The MOPED algorithm reduces the complexity to $O(M)$ operations. \JZ{The primary advantage in cosmology at least is making the estimation of the covariance simpler, because you need far fewer simulations.}
 
-To give an illustration here is a snippet that use the mock data set and the results of the Fisher matrix computation as in the previous section, to get the MOPED compressed data set composed of two numbers $(y_0,y_1)$ with maximal information on $(Omega_c, \sigma_8)$ respectively:  
+To give an illustration, this snippet uses the mock data set and results of the Fisher matrix computation from the previous section to obtain the MOPED compressed data set composed of two parameters $(y_0,y_1)$ with maximal information on $(Omega_c, \sigma_8)$:  
 \begin{lstlisting}[language=iPython]
 # Orthogonal vectors
 b0 = jc.sparse.dot(C_inv,dmu[:,0])/jax.numpy.sqrt(F[0,0])
 a = dmu[:,1].T @ b0
 b1 = (jc.sparse.dot(C_inv,dmu[:,1]) - a * b0)/jax.numpy.sqrt(F[1,1]-a*a)
-# MOPED vector
+# MOPED vectors
 y0 = b0.T @ data
 y1 = b1.T @ data
 \end{lstlisting}
-Then, the log-likelihood can easily be implemented as followed
+Then, the log-likelihood can easily be implemented as:
 \begin{lstlisting}[language=iPython]
 @jax.jit
 def compress_likelihood(p):
@@ -458,6 +464,16 @@ def compress_likelihood(p):
     # likelihood using the MOPED vector
     return -0.5 * ((y0 - b0.T @ mu)**2 + (y1 - b1.T @ mu)**2)
 \end{lstlisting}
+The comparison between contour lines obtained with the original likelihood (uncompressed data set) and the MOPED version are shown in Figure \ref{fig:moped} in the case study of the previous section. Clearly, close to the negative likelihood minimum the lines agree very well.
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{figures/moded.png}
+    \caption{Illustration of the log-likelihood contours obtained with an uncompressed data set (plain lines) and a MOPED version (dashed lines).} 
+    \label{fig:moped}
+\end{figure}
+%
+The case where the covariant matrix depends upon the parameters is discussed by  \citet{2017MNRAS.472.4244H} and leads to similar advantages of the MOPED compression algorithm.
+
 %
 \section{Application: Classical Hamiltonian Monte Carlo}
 \label{sec:chmc}
