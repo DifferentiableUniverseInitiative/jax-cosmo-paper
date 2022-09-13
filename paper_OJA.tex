@@ -382,16 +382,29 @@ hessian_loglike = jax.jit(jax.hessian(likelihood))
 F = - hessian_loglike(params)
 \end{lstlisting}
 
-The second approach to computing the Fisher matric, which is restricted to Gaussian likelihoods but is more commonly used in the field because of its numerical stability, is to define a function that computes the observable mean  $\mu(\ell; \theta)$; it follows that the Fisher matrix elements are
+The second approach to computing the Fisher matrix, which is restricted to Gaussian likelihoods but is more commonly used in the field because of its numerical stability, is to define a function that computes the observable mean  $\mu(\ell; \theta)$; it follows that the Fisher matrix elements are
 \begin{equation}
     F_{i,j} = \sum_\ell \frac{\partial \mu(\ell)}{\partial \theta_i}^T C^{-1}(\ell)\frac{\partial \mu(\ell)}{\partial \theta_j}
     \label{eq:fisher_way2}
 \end{equation}
 where $C^{-1}(\ell)$ is the covariance matrix computed with the fiducial cosmology. This can also be simply computed in JAX: 
 \begin{lstlisting}[language=iPython]
+# We define a parameter dependent function that computes the mean
+@jax.jit
+def jc_mean(p):
+    cosmo = jc.Planck15(Omega_c=p[0], sigma8=p[1])
+    # Compute signal vector
+    mu = jc.angular_cl.angular_cl(cosmo, ell, tracers)
+    # We want mu in 1d to operate against the covariance matrix
+    return mu.flatten() 
+# We compute it's jacobian with JAX, and we JIT it for efficiency
+jac_mean = jax.jit(jax.jacfwd(jc_mean))
+# We can now evaluate the jacobian at the fiducial cosmology
+dmu = jac_mean(params)
+# Now we can compose the Fisher matrix
 F = jc.sparse.dot(dmu.T, jc.sparse.inv(cov), dmu)
 \end{lstlisting}
-\JZ{dmu in the above is not defined anywhere}
+% done by JEC 13Sept22 \JZ{dmu in the above is not defined anywhere}
 
 JAX implementations of the two methods agree to near perfect accuracy, as shown in Figure \ref{fig:simple_fisher_1}.
 \begin{figure}
@@ -401,7 +414,8 @@ JAX implementations of the two methods agree to near perfect accuracy, as shown 
     \label{fig:simple_fisher_1}
 \end{figure}
 %
-It is worth noting that in the two methods for Fisher matrix computations described above, the user does not need to vary individual parameter values to compute the 1st or 2nd order derivatives; this is in contrast to the usual finite difference methods. As an illustration, we have used the CCL library to compute the Fisher matrix via Equation \ref{eq:fisher_way2}. To do so, the Jacobian ($\partial \mu/\partial\theta_\alpha$) is computed with centered  order 4 finite differences available in the \texttt{Numdifftools} Python package\footnote{\url{https://numdifftools.readthedocs.io}}. Using the parameter values spaced by ($10^{-6}$, $10^{-2}$, $10^{-1}$) one obtains three different approximation of the 1-sigma contours as shown on Figure \ref{fig:simple_fisher_2}. The contour that agrees best with the \jaxcosmo\ method is obtained with the intermediate spacing parameter $10^{-2}$, implying that the user must tune this parameter carefully. Although very simple, this case study exhibits a significant challenge of finite difference methods for computing the Fisher matrix as has been shown for instance in a more advanced case study in \citet{2021arXiv210100298B}. \JZ{Should probably latex the step sizes $10^{-1}, 10^{-2}, 10^{-6}$ in the figure legend}
+It is worth noting that in the two methods for Fisher matrix computations described above, the user does not need to vary individual parameter values to compute the 1st or 2nd order derivatives; this is in contrast to the usual finite difference methods. As an illustration, we have used the CCL library to compute the Fisher matrix via Equation \ref{eq:fisher_way2}. To do so, the Jacobian ($\partial \mu/\partial\theta_\alpha$) is computed with centered  order 4 finite differences available in the \texttt{Numdifftools} Python package\footnote{\url{https://numdifftools.readthedocs.io}}. Using the parameter values spaced by ($10^{-6}$, $10^{-2}$, $10^{-1}$) one obtains three different approximation of the 1-sigma contours as shown on Figure \ref{fig:simple_fisher_2}. The contour that agrees best with the \jaxcosmo\ method is obtained with the intermediate spacing parameter $10^{-2}$, implying that the user must tune this parameter carefully. Although very simple, this case study exhibits a significant challenge of finite difference methods for computing the Fisher matrix as has been shown for instance in a more advanced case study in \citet{2021arXiv210100298B}. 
+% done by JEC 13Sept22 \JZ{Should probably latex the step sizes $10^{-1}, 10^{-2}, 10^{-6}$ in the figure legend}
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{figures/simple_fisher_2.png}
@@ -439,11 +453,14 @@ The algorithm is similar to the Gram-Schmidt process, using the constant covaria
 \begin{equation}
     y_i = b_i^T x
 \end{equation}
-These numbers are uncorrelated and of unit variance and $(y_i)_{i\leq M}$ is a set of sufficient statistics for the set of parameters $(\theta_i)_{i\leq M}$, $y_i$ contains the maximum information about the parameter $\theta_i$. \JZ{I don't think this is true beyond the quadratic approximation to the log posterior - in particular I don't think these are a sufficient statistic for the full data set. If they were SS's then the curves in fig 6 would be identical.}
+These numbers are uncorrelated and of unit variance and this construction ensures that the log-likelihood of $(y_i)_{i\leq M}$  $(\theta_i)_{i\leq M}$, $y_i$ is identical to that of $x$ up to second order, meaning that the Fisher matrices derived from the two parameters should be identical, and in general the $y$ values should lose very little information compared to the full likelihood.
 
-The net gain of MOPED algorithm is to eliminate the need of large covariance matrix inversion of size $N\times N$ requiring $O(N^3)$ operations. This inversion takes place not only for the Fisher matrix computation (Eq.~\ref{eq:fisher_way2}, but more importantly in the log-likelihood computation (see the snippet of the previous section). The MOPED algorithm reduces the complexity to $O(M)$ operations. \JZ{The primary advantage in cosmology at least is making the estimation of the covariance simpler, because you need far fewer simulations.}
+In problems where a (constant) covariance matrix is estimated from simulations, the number of such simulations required for a given accuracy typically scales with the number of data points used. 
+MOPED therefore greatly reduces this number, often by a factor of hundreds. Since the uncertainty in the covariance due to a finite number of simulations must be accounted for \citep{2018MNRAS.473.2355S,2007A&A...464..399H}, this reduction can also offset any loss of information from the compression.
 
-To give an illustration, this snippet uses the mock data set and results of the Fisher matrix computation from the previous section to obtain the MOPED compressed data set composed of two parameters $(y_0,y_1)$ with maximal information on $(Omega_c, \sigma_8)$:  
+Another key advantage of the MOPED algorithm is to eliminate the need of large covariance matrix inversion of size $N\times N$ requiring $O(N^3)$ operations. This inversion takes place not only for the Fisher matrix computation (Eq.~\ref{eq:fisher_way2}, but more importantly in the log-likelihood computation (see the snippet of the previous section). The MOPED algorithm reduces the complexity to $O(M)$ operations.
+
+To give an illustration, the following snippet uses the mock data set and results on the Fisher matrix computation from the previous section, to obtain the MOPED compressed data set composed of two parameters $(y_0,y_1)$ with maximal information on $(Omega_c, \sigma_8)$:  
 \begin{lstlisting}[language=iPython]
 # Orthogonal vectors
 b0 = jc.sparse.dot(C_inv,dmu[:,0])/jax.numpy.sqrt(F[0,0])
