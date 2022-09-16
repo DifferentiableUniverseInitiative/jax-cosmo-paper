@@ -210,7 +210,7 @@ While these tools have especially been applied to neural network optimization an
 A recent entrant to this field is the \texttt{JAX} library\footnote{\url{https://jax.readthedocs.io}} \citep{jax2018github} which has undergone rapid development and can automatically differentiate native \texttt{Python} and \texttt{NumPy} functions, offering a speed up to the development process and indeed code runtimes. \texttt{JAX} offers an easy parallelization mechanism (\texttt{vmap}), and just-in-time compilation (\texttt{jit}) and optimization targetting CPU, GPU and TPU hardware thanks to the \texttt{XLA} library that powers TensorFlow. These attractive features have driven wide adoption of \texttt{JAX} in computational research, and motivate us to consider its usage in cosmology.
 
 \texttt{JAX} contains bespoke reimplementation of packages such as \texttt{jax.numpy} and \texttt{jax.scipy}, as well as example libraries as \texttt{Stax} for simple but flexible neural network development. It has formed the seed for a wider ecosystem of packages, including, for example: 
-\texttt{Flax} \citep{flax2020github} a high-performance neural network library, \texttt{JAXopt} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable collection of optimizers, \texttt{Optax} \citep{optax2020github} a gradient processing and optimization library, and \numpyro \citep{phan2019composable,bingham2019pyro}, a probabilistic programming language (PPL) that is used in this paper. Other PPL packages such as \texttt{PyMC} \citep{Salvatier2016} have switched to JAX backend in recent versions\footnote{A more exhaustive list and rapidly growing list of packages can be found at \url{https://project-awesome.org/n2cholas/awesome-jax}}.
+\texttt{Flax} \citep{flax2020github} a high-performance neural network library, \texttt{JAXopt} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable collection of optimizers, \texttt{Optax} \citep{optax2020github} a gradient processing and optimization library, and \numpyro\ \citep{phan2019composable,bingham2019pyro}, a probabilistic programming language (PPL) that is used in this paper. Other PPL packages such as \texttt{PyMC} \citep{Salvatier2016} have switched to JAX backend in recent versions\footnote{A more exhaustive list and rapidly growing list of packages can be found at \url{https://project-awesome.org/n2cholas/awesome-jax}}.
 
 % I don't think we need all these URLs, it's getting excessive, especially when they have papers:
 %\footnote{\url{https://flax.readthedocs.io/}}
@@ -226,7 +226,7 @@ A recent entrant to this field is the \texttt{JAX} library\footnote{\url{https:/
 In this context we have developed the open source \jaxcosmo\ library\footnote{\url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}}, which we present in this paper. The package represents a first step in making the powerful features described above useful for cosmology; it implements a selection of theory predictions for key cosmology observables as differentiable JAX functions.
 
 
-We give an overview of the code's design and contents in Section~\ref{sec-jaxcosmo-design}. We show how to use it for rapid and numerically stable Fisher forecasts in Section~\ref{sec-fisher-forecast}, in more advanced gradient-based cosmological inference with variants of Hamiltonian Monte Carlo and its variant No-U-Turn in Section~\ref{sec:chmc}, and in ML-accelerated Stochastic Variational Inference in Section~\ref{sec-SVI}. We discuss and compare these methods in Section~\ref{sec-discussion} and conclude in Section~\ref{sec-conclusion}.
+We give an overview of the code's design and contents in Section~\ref{sec-jaxcosmo-design}. We show how to use it for rapid and numerically stable Fisher forecasts in Section~\ref{sec-fisher-forecast}, in more complete gradient-based cosmological inference with variants of Hamiltonian Monte Carlo and its variant No-U-Turn, and ML-accelerated Stochastic Variational Inference in Section~\ref{sec:chmc}. We discuss and compare these methods in Section~\ref{sec-discussion} and conclude in Section~\ref{sec-conclusion}.
 
 
 
@@ -337,7 +337,7 @@ These numerical differences are mostly due to different choices of integration m
 \end{figure}
 
 
-\section{Application: Fisher Forecasting}
+\section{Fisher Forecasting}
 \label{sec-fisher-forecast}
 % illustrates why autodiff is interesting from several points of view
 
@@ -460,7 +460,7 @@ MOPED therefore greatly reduces this number, often by a factor of hundreds. Sinc
 
 Another key advantage of the MOPED algorithm is to eliminate the need of large covariance matrix inversion of size $N\times N$ requiring $O(N^3)$ operations. This inversion takes place not only for the Fisher matrix computation (Eq.~\ref{eq:fisher_way2}, but more importantly in the log-likelihood computation (see the snippet of the previous section). The MOPED algorithm reduces the complexity to $O(M)$ operations.
 
-To give an illustration, the following snippet uses the mock data set and results on the Fisher matrix computation from the previous section, to obtain the MOPED compressed data set composed of two parameters $(y_0,y_1)$ with maximal information on $(Omega_c, \sigma_8)$:  
+To give an illustration, the following snippet uses the mock data set and results on the Fisher matrix computation from the previous section, to obtain the MOPED compressed data set composed of two parameters $(y_0,y_1)$ with maximal information on $(\Omega_c, \sigma_8)$:  
 \begin{lstlisting}[language=iPython]
 # Orthogonal vectors
 b0 = jc.sparse.dot(C_inv,dmu[:,0])/jax.numpy.sqrt(F[0,0])
@@ -492,14 +492,14 @@ The comparison between contour lines obtained with the original likelihood (unco
 The case where the covariant matrix depends upon the parameters is discussed by  \citet{2017MNRAS.472.4244H} and leads to similar advantages of the MOPED compression algorithm.
 
 %
-\section{Application: Classical Hamiltonian Monte Carlo}
+\section{Full Inference Methods}
 \label{sec:chmc}
 %
 In the following sections we review some statistical methods used to make the cosmological parameter inference with \jaxcosmo. We have used a variant of Hamiltonian Monte Carlo knows as \textit{No-U-Turn} (NUTS) and NUTS after a \textit{Neural Transport} perform using a \textit{Stochastic Variational Inference} (aka SVI). All  the methods have been implemented using the \numpyro\ probabilistic programming language (PPL). 
 %
 %
 %
-\subsection{Vanilla HMC}
+\subsection{Vanilla Hamiltonian Monte Carlo}
 %
 % Show Joe's vanilla HMC results against Cobaya
 Hamiltonian Monte Carlo (HMC) is an MCMC-type method particularly suited to drawing
@@ -576,7 +576,7 @@ Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} 
 \end{itemize}
 The NUTS sampler have been running with 16 chains of 1,000 samples each (\texttt{vectorized} option) after a warm-up phase consisting of 200 samples, and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). The experiments have been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or a NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapse time for these experiments was 20 hours.
 
-The results in terms of relative effective sample sizes (aka "ESS") are detailed in Table~\ref{tab-ESS-NUTS_SVI-1} while the confidential level (CL) contours are presented in Figure \ref{fig_cobaya_NUTS_SVI}. One notices the dramatic improvement of the ESS by about a factor 10 using the NUTS sampler compared to the highly-optimized \texttt{Cobaya}  Metropolis-Hastings implementation \citep{2019ascl.soft10019T,2021JCAP...05..057T} which has last about 40 hours on CPU to generate 70,000 samples. The CL contours are also in very good agreement. It is worth to point out that the mass matrix structuring operation is a very effective as it increases the sampling efficiency by about a factor 2.   Anticipating the Section~\ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective solution to validate the model with fewer samples, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Table~\ref{tab-ESS-NUTS_SVI-1}), then the user is highly encouraged to tune this critical parameter. 
+The results in terms of relative effective sample sizes (aka ``ESS'') are detailed in Table~\ref{tab-ESS-NUTS_SVI-1} while the confidential level (CL) contours are presented in Figure \ref{fig_cobaya_NUTS_SVI}. One notices the dramatic improvement of the ESS by about a factor 10 using the NUTS sampler compared to the highly-optimized \texttt{Cobaya}  Metropolis-Hastings implementation \citep{2019ascl.soft10019T,2021JCAP...05..057T} which has last about 40 hours on CPU to generate 70,000 samples. The CL contours are also in very good agreement. It is worth to point out that the mass matrix structuring operation is a very effective as it increases the sampling efficiency by about a factor 2.   Anticipating the Section~\ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective solution to validate the model with fewer samples, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Table~\ref{tab-ESS-NUTS_SVI-1}), then the user is highly encouraged to tune this critical parameter. 
 %
 \begin{figure*}
 \centering
@@ -587,7 +587,7 @@ The results in terms of relative effective sample sizes (aka "ESS") are detailed
 
 
 
-\section{Application: Stochastic Variational Inference}
+\subsection{Stochastic Variational Inference}
 \label{sec-SVI}
 %
 Let us remind briefly what is the \textit{Stochastic Variational Inference} method \citep{2012arXiv1206.7051H, 2017arXiv171105597Z} and show where auto-differentiation helps. If one  writes $p(z)$ the prior, $p(\mathcal{D}|z)$ the likelihood and $p(\mathcal{D})$ the marginal likelihood, then thanks to the  Bayes theorem one gets $p(z|\mathcal{D})=p(z)p(\mathcal{D}|z)/p(\mathcal{D})$ the posterior distribution of a model with latent variables $z$ and a set of observations $\mathcal{D}$. The VI aims to get an approximation of this distribution, ie. $p(z|\mathcal{D}) \approx q(z;\lambda)$, by determining the variational parameters $\lambda$ of a predefined distribution. To do so, one uses the Kullback-Leibler divergence of the two distributions $KL(q(z;\lambda)||p(z|\mathcal{D}))$ leading to the following relation
@@ -607,8 +607,8 @@ The function $\mathcal{L}(\lambda)$ is the cost function used in practice. It is
 \end{equation}
 where the \textit{guide} in the \numpyro\ library may be a multi-variate Gaussian distribution (MVN) for instance.
 
-Using the auto-differentation tool, one can use "black-box" guides (aka \textit{automatic differentiation variational inference}). As stated by the authors of \citep{2016arXiv160300788K} ADVI helps specifying a variational family appropriate to the model, computing the corresponding objective
-function, taking derivatives, and running a gradient-based or coordinate-ascent optimization. First is defined a bijective differentiable transformation $T$ of the original latent variables $z$ into new variables $\xi$, such $\xi=T(z)$ and $z=T^{-1}(\xi)$. One can develop "AutoGuides" (\numpyro\ terminology) that can be adapted to the user models. Then, the cost function reads
+Using the auto-differentation tool, one can use ``black-box'' guides (aka \textit{automatic differentiation variational inference}). As stated by the authors of \citep{2016arXiv160300788K} ADVI helps specifying a variational family appropriate to the model, computing the corresponding objective
+function, taking derivatives, and running a gradient-based or coordinate-ascent optimization. First is defined a bijective differentiable transformation $T$ of the original latent variables $z$ into new variables $\xi$, such $\xi=T(z)$ and $z=T^{-1}(\xi)$. One can develop ``AutoGuides'' (\numpyro\ terminology) that can be adapted to the user models. Then, the cost function reads
 \begin{equation}
 \mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{q(\xi;\lambda)}\left[ \log q(\xi;\lambda)\right]}_{guide} - \underbrace{\mathbb{E}_{q(\xi;\lambda)}\left[ \log p(\xi,\mathcal{D}) \right]}_{model}
 \label{eq-loss-svi-2}
@@ -645,9 +645,9 @@ For the use case of the MVN (auto)guide, one gets
 &\left. \left. \qquad\qquad\qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right] \times \xi^T 
 \right\}+ (L^{-1})^T
 \end{align}
-The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the "S" of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX. Now even if one can sample from the optimized  $q(z,\lambda^\ast)$ distribution, we have used SVI as front-end to a NUTS sampler which is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}.
+The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX. Now even if one can sample from the optimized  $q(z,\lambda^\ast)$ distribution, we have used SVI as front-end to a NUTS sampler which is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}.
 %
-\subsection{Neural Transport}
+\subsubsection{Neural Transport}
 \label{sec-Neural-Reparametrisation}
 %
 If the SVI method can be used as is to get $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution, the \textit{Neural Transport MCMC} method \citep{2014arXiv1412.5492P,2019arXiv190303704H} is an efficient way to boost HMC efficiency, especially in target distribution unfavourable geometry where for instance the leapfrog integration algorithm has to face squeezed join distributions for a subset of variables. From SVI, one obtains a first approximation of the target distribution and we show that the change-of-variable $z=F_\lambda(\zeta)$ is such that
@@ -691,11 +691,11 @@ which is evaluated with optimal $\lambda^\ast$ according to maximization of the 
 
 Using the same DES-Y1 simulation as in previous section, we use a MVN distribution as \textit{guide} to approximate the true posterior (\textit{model}) and feed a SVI. The SVI optimization has been performed with the Adam optimizer \citep{2014arXiv1412.6980K} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 steps to ensure a good convergence of the ELBO loss, but no particular tuning of the optimizer has been undertaken to decrease the number of steps. It takes 2 hours on the NVidia V100 GPU.  
 
-Then, we have used the Neural Transport method to generate Markov Chains of different sizes by the NUTS sampler, the chains have run 200 warm samples, and then 200 samples ("low" schema), 1000 samples on a single chain, and finally we have run 10 chains  with 1000 samples each. All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of these 3 runs is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the "low" schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
+Then, we have used the Neural Transport method to generate Markov Chains of different sizes by the NUTS sampler, the chains have run 200 warm samples, and then 200 samples (``low'' schema), 1000 samples on a single chain, and finally we have run 10 chains  with 1000 samples each. All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of these 3 runs is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the ``low'' schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
 
 Results in terms of sampling efficiency are shown on Table~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to ease the model development in its early phase.
 %
-\section{Discussion}
+\section{Full Inference Methods: Results}
 \label{sec-discussion}
 %
 To a large extend looking at results of Table~\ref{tab-ESS-NUTS_SVI-1}, the key question is: what is the HMC/NUTS gain compared to the well known highly optimized \texttt{Cobaya} sampler? 
@@ -710,7 +710,7 @@ On the other hand, the above metric is may be too crude to cover all aspects of 
 So, the authors think that it is worth considering methods like HMC/NUTS that by construction are more efficient. Moreover, using SVI with neural reparametrisation offers an effective way to undertake a progressive validation of the model with rather modest sample set (eg. starting with 200 samples) producing good enough marginal contours in few hours. In practice, this validation phase can save time before producing sizeable batch for final analysis. The authors have not investigated very high dimensional ($O(10^2)$ parameters) as well as multi-modal analysis, but the key argument in favour of HMC/NUTS sampling is that it exploit the geometry of the typical set of the posterior distribution contrary to the standard random walk of Metropolis-Hasting sampling. Furthermore, using reparametrisation  one can adapt to poor geometry cases (eg. \cite{2019arXiv190303704H}).
 %
 \begin{table}[htb]
-\caption{Results of the \textit{relative effective sample size} (aka ESS, "bulk") in percent computed by the \texttt{Arviz} library \citep{arviz_2019}. The ESS can be larger than 100\% in some cases. 
+\caption{Results of the \textit{relative effective sample size} (aka ESS, ``bulk'') in percent computed by the \texttt{Arviz} library \citep{arviz_2019}. The ESS can be larger than 100\% in some cases. 
 %{\color{red} 
 %(0) "F.L run" are computed from NUTS sampler with 16 %parallel chains of 1,000 samples each and 200 warm-up %and \texttt{max\_tree\_depth=7} (see text) The numbers %are from \texttt{n\_eff/16,000};
 %}
@@ -766,7 +766,7 @@ Some of the numerical experiments have been conducted at the IN2P3 Computing Cen
 
 \section{Description of the DES-Y1 exercise}
 \label{app-DESY1}
-From the DES server\footnote{\url{http://desdr-server.ncsa.illinois.edu/despublic/y1a1_files/chains/2pt_NG_mcal_1110.fit}} we have extracted the $N(z)$ distributions of the sources and normalize them to $[1.47, 1.46, 1.50, 0.73]$ effective number of sources per $\mathrm{arcmin}^2$ for each of the four redshift bins, respectively. The lens distributions $N(z)$ for five redshift bins are also extracted. The corresponding shapes of the different distributions are performed thanks to \texttt{jc.redshift.kde\_nz} function ("\texttt{jc}" hereafter stands for \texttt{jax\_cosmo}) and are presented in Figure \ref{fig-DESY1-src-lens-redshift}.
+From the DES server\footnote{\url{http://desdr-server.ncsa.illinois.edu/despublic/y1a1_files/chains/2pt_NG_mcal_1110.fit}} we have extracted the $N(z)$ distributions of the sources and normalize them to $[1.47, 1.46, 1.50, 0.73]$ effective number of sources per $\mathrm{arcmin}^2$ for each of the four redshift bins, respectively. The lens distributions $N(z)$ for five redshift bins are also extracted. The corresponding shapes of the different distributions are performed thanks to \texttt{jc.redshift.kde\_nz} function (``\texttt{jc}'' hereafter stands for \texttt{jax\_cosmo}) and are presented in Figure \ref{fig-DESY1-src-lens-redshift}.
 \begin{figure}
 \centering
 \includegraphics[height=3cm]{figures/DESY1-source-redshift.png}
