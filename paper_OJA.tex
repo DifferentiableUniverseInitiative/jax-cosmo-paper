@@ -738,7 +738,7 @@ For the use case of the MVN (auto)guide, one gets
 \end{align}
 \FrL{Yeah. this is way TMI, and also goes against the idea that with autodiff we don't need to manually work out all these details.} \FrL{let's move the MVN details to an appendix.}
 The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX. Now even if one can sample from the optimized  $q(z,\lambda^\ast)$ distribution, we have used SVI as front-end to a NUTS sampler which is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}. \FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
-\FrL{we don't have plots of just the VI?}\JEC{SVI alone (ie. not followed by HMC) gives poor results.}
+\FrL{we don't have plots of just the VI?}\JEC{Good point: I have SVI alone with both MVN or Block Neural Autoregressive Flow. The contours are narrower which would require to elaborate...}
 %
 \subsubsection{Neural Transport}
 \label{sec-Neural-Reparametrisation}
