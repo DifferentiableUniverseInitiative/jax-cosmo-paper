@@ -595,12 +595,18 @@ where $U(p)$ is a sort of \textit{kinetic} term defined by
 \begin{equation}
 U(p) = p^T M^{-1} p
 \end{equation}
-At each sample, a trajectory is initialized with a random momentum $p$, and then integrated using Hamilton's equations with a numerical integration (so called \textit{leapfrog} algorithm):
+At each sample, a trajectory is initialized with a random momentum $p$, and then integrated using Hamilton's equations with a numerical integration :
 \begin{align}
-\frac{\mathrm{d}p}{\mathrm{d}t} &= - \frac{\partial V}{\mathrm{d} q} = \frac{\partial \log{\cal P}}{\mathrm{d} q}\\
+\frac{\mathrm{d}p}{\mathrm{d}t} &= - \frac{\partial V}{\mathrm{d} q} = \frac{\partial \log{\cal P}}{\mathrm{d} q} \\
 \frac{\mathrm{d}q}{\mathrm{d}t} &= + \frac{\partial U}{\mathrm{d} p} = M^{-1} p
 \end{align}
-where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also used to set the scale of the random initial velocities.
+where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also used to set the scale of the random initial velocities. \JEC{These differential equations may be integrated iterating over $L$ steps the following \textit{leapfrog} algorithm
+\begin{align}
+    p_{n+\frac{1}{2}} &= p_n -\frac{\varepsilon}{2} \frac{\partial V}{\mathrm{d} q}(q_n) \\
+    q_{n+1} & = q_n +\varepsilon M^{-1} p_{n+\frac{1}{2}} \\
+    p_{n+1} &=  p_{n+\frac{1}{2}} -\frac{\varepsilon}{2} \frac{\partial V}{\mathrm{d} q}(q_{n+1})
+\end{align}
+where $\varepsilon$ is a step size parameter.}
 
 Formally, the set of $n_\mathrm{dim}$ moment are treated as new parameters, and after 
 some number of integration steps a final point in the trajectory is compared to the initial one,
@@ -610,11 +616,14 @@ a relaxation to the integration accuracy.
 That gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing,
 but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluations per point, greatly slowing it
 in high dimension, and as with the Fisher forecasting is highly prone to numerical error. Automatically
-calculating a Hessian, as in \jaxcosmo, makes it feasible and efficient. \FrL{I don't think it uses a Hesssian? you only need the derivative of the log posterior wrt parameters. The hessian would be needed to get a good estimate of M.}
+calculating a Hessian, as in \jaxcosmo, makes it feasible and efficient. \FrL{I don't think it uses a Hesssian? you only need the derivative of the log posterior wrt parameters. The hessian would be needed to get a good estimate of M.}\JEC{Yes. Why the Hessian?}
+
+\FrL{Needs a little paragraph to explain with HMC is supposed to be better than plain Metropolis-Hastings.}
+\JEC{Metropolis-Hastings suffers from random walk to explore the geometry of the target distribution to get the region of maximum probability (ie. typical set) which is particularly  penalising in large dimensions. The HMC dynamics allow to make large jumps to explore the region around a sample to guess the next good one.}
 
 The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the number of steps as well as the step size of integration. The next section addresses this problem thanks to the No-U-Turn HMC version.
 
-\FrL{Needs a little paragraph to explain with HMC is supposed to be better than plain Metropolis-Hastings.}
+
 
 %Below we show an example set of HMC constraints using \jaxcosmo\ to constrain a simulated
 %Dark Energy Survey Year One (DES-Y1) lensing and clustering-like (3x2pt) likelihood, using 21 parameters\footnote{We omit the 
@@ -649,7 +658,7 @@ The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the
 % Show the advantage of using NUTS 
 % look at difference in efficiency in terms of how many times we need to call the model.
 
-The No-U-Turn (\textit{NUTS})  variant of the traditional HMC sampler has been introduced in \citet{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. \FrL{Parameters L an epsilon should be introduced at the level of HMC then.} So, in an automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls at each generation.
+The No-U-Turn (\textit{NUTS})  variant of the traditional HMC sampler has been introduced in \citet{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. \FrL{\st{Parameters L an epsilon should be introduced at the level of HMC then.}}\JEC{done} So, in an automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls at each generation.
 
 Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class. \FrL{class inheritance is TMI.}  After the forward model creation for the DES-Y1 3x2pts exercise described in Appendix~\ref{app-DESY1} \FrL{We should introduce the model at the beginning of this section.}, we have performed 
 \begin{itemize}
