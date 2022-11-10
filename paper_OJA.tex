@@ -19,6 +19,8 @@
 \usepackage{lineno}
 \usepackage{fontawesome}
 
+%to cross out a sentence: \st{Hello World}
+\usepackage{soul}
 
 %%%% usepackage{minted}
 \usepackage{xcolor}
@@ -141,6 +143,8 @@
 %% JEC : \FL produces a clash we another definition (but coannot figure out which one)  
 \newcommand{\FrL}[1]{{\color{cyan}FL: #1}}
 \newcommand{\JZ}[1]{{\color{purple}JZ: #1}}
+\newcommand{\JEC}[1]{{\color{green}JEC: #1}}
+
 
 %%%% new command (JEC)
 \newcommand{\nn}{\nonumber}
@@ -247,7 +251,7 @@ The first approach is to derive analytically the formula for the derivatives of 
 
 The second approach is to compute numerical derivatives by finite differences. This approach can be applied on black-box models of abitrary complexity (from Boltzmann codes \FrL{some citations} to cosmological simulations \FrL{some citations}). However it is notoriously difficult to obtain stable derivatives by finite differences \FrL{cite papers trying to do fisher}. In addition, their computational cost does not scale well with the number of parameters (a minimum of $(2N+1)$ model evaluations is typically required for $N$ parameters), making them completely inpractical whenever derivatives are needed on the fly.\FrL{this last sentence is not great.}
 
-Automatic differentiation frameworks like JAX take a different approach. They trace the execution of a given model and decompose this trace into fundamental operations with known derivatives (e.g. the derivative of a multiplication operation is known). Then, by applying the chain rule formula, the compatutional graph for the derivatives (of any order) of the model can be built from the known derivatives of every elementary operations. A new function corresponding to the derivative of the original function is therefore built automatically for the user. We direct the interested reader to \FrL{a good reference} for an in-depth introduction to automatic differentiation. 
+Automatic differentiation frameworks like JAX take a different approach. They trace the execution of a given model and decompose this trace into fundamental operations with known derivatives (e.g. the derivative of a multiplication operation is known). Then, by applying the chain rule formula, the computational graph for the derivatives (of any order) of the model can be built from the known derivatives of every elementary operations. A new function corresponding to the derivative of the original function is therefore built automatically for the user. We direct the interested reader to \FrL{a good reference} for an in-depth introduction to automatic differentiation. 
 
 JAX provides in particular a number of operators (\texttt{jax.grad}, \texttt{jax.jacobian}, \texttt{jax.hessian}) which can compute derivatives of any function written in JAX.
 \begin{lstlisting}[language=iPython]
@@ -374,16 +378,16 @@ with $P(k,z)$ the power spectra computed using the growth of perturbation models
 \end{equation}
 The normalisation $A$ is computed using the $\sigma_8$ parameter as 
 \begin{equation}
-    A = \sigma_8^2 \times \left(\frac{1}{2 \pi^2} \int_0^\infty \frac{dk}{k} k^3 P(k,z) W^2(kR_8) \right)^{-1}
+    A = \sigma_8^2 \times \left(\frac{1}{2 \pi^2} \int_0^\infty \frac{dk}{k} k^3 P(k) W^2(kR_8) \right)^{-1}
 \end{equation}
-\FrL{At which z ?}
+\JEC{\st{At which z ?}}
 with $R_8 = 8$ in unit of Mpc and $W(x)$ is related to the $j_1$ spherical Bessel function as
 \begin{equation}
     W(x) = \frac{3j_1(x)}{x}
 \end{equation}
 Finally, the factors $m_i$ are equal to $(0,-2)$ for the \texttt{NumberCounts}, \texttt{WeakLensing} related kernels, respectively. 
 
-Remarkably, all the integrals involved in these computations can be  differentiated with respect to the cosmological parameters thanks to \textit{autodiff} and the implementation of the above mentioned integration quadrature \FrL{Are we using quadratures currently? I think by default we are using simple Simpson no?}.  An example is given in the context of DES Y1 3x2pts analysis (Appendix~\ref{app-DESY1}).
+Remarkably, all the integrals involved in these computations can be  differentiated with respect to the cosmological parameters thanks to \textit{autodiff} and the implementation of the above mentioned integration quadrature \FrL{Are we using quadratures currently? I think by default we are using simple Simpson no?}\JEC{Correct: the current pip version uses Simpson but it is a quadrature even if it is qualified "simple".}.  An example is given in the context of DES Y1 3x2pts analysis (Appendix~\ref{app-DESY1}).
 %
 \subsection{Validation against the Core Cosmology Library (CCL)}
 %
@@ -515,7 +519,7 @@ Fisher forecasts are also commonly used in survey and analysis strategy strategy
 \FrL{Here we can implement MOPED for the compression}
 
 Once the Fisher matrix can be safely estimated, one can use the MOPED\footnote{Massively Optimised Parameter Estimation and Data compres-
-sion} algorithm \citep{2000MNRAS.317..965H,2016PhRvD..93h3525Z, 2017MNRAS.472.4244H}. In the case of the constant covariance matrix the algorithm compresses data in a way that is lossless at the Fisher matrix level (i.e. Fisher matrices estimated using the compressed and full data are identical, by construction)  which reduces a possibly large data vector $x$ of size $N$ to $M$ numbers, where $M$ is the number of parameters $\theta_i$ considered. For instance, in the previous section, $N=500$ as $x=(C_\ell^{p,q})$ and $M=2$ for $(\Omega_c,\sigma_8)$. The algorithm computes by iteration $M$ vectors of size $N$ such that (taking the notation of the previous section)
+sion} algorithm \citep{2000MNRAS.317..965H,2016PhRvD..93h3525Z, 2017MNRAS.472.4244H}. In the case of the constant covariance matrix the algorithm compresses data in a way that is lossless at the Fisher matrix level (i.e. Fisher matrices estimated using the compressed and full data are identical, by construction)  which reduces a possibly large data vector $\mu$ of size $N$ to $M$ numbers, where $M$ is the number of parameters $\theta_i$ considered. For instance, in the previous section, $N=500$ as $\mu=(C_\ell^{p,q})$ and $M=2$ for $(\Omega_c,\sigma_8)$. The algorithm computes by iteration $M$ vectors of size $N$ such that (taking the notation of the previous section)
 \begin{equation}
     b_i = \frac{C^{-1}\mu_{,i}-\sum_{j=1}^{i-1}(\mu_{,j}^T b_j)b_j}{\sqrt{F_{i,i}-\sum_{j=1}^{i-1}(\mu_{,j}^T b_j)^2}}
 \end{equation}
@@ -530,7 +534,7 @@ The algorithm is similar to the Gram-Schmidt process, using the constant covaria
 These numbers are uncorrelated and of unit variance and this construction ensures that the log-likelihood of $(y_i)_{i\leq M}$  $(\theta_i)_{i\leq M}$, $y_i$ is identical to that of $x$ up to second order, meaning that the Fisher matrices derived from the two parameters should be identical, and in general the $y$ values should lose very little information compared to the full likelihood.
 
 In problems where a (constant) covariance matrix is estimated from simulations, the number of such simulations required for a given accuracy typically scales with the number of data points used. 
-MOPED therefore greatly reduces this number, often by a factor of hundreds. Since the uncertainty in the covariance due to a finite number of simulations must be accounted for \citep{2018MNRAS.473.2355S,2007A&A...464..399H}, this reduction can also offset any loss of information from the compression. \FrL{hummm but we still do need a full covariance in the compression algorithm, right?} \FrL{And we still do need to invert it... is the idea rather that if we dont have a perfect matrix at that stage the worse that can happen is sub optimal compression?}
+MOPED therefore greatly reduces this number, often by a factor of hundreds. Since the uncertainty in the covariance due to a finite number of simulations must be accounted for \citep{2018MNRAS.473.2355S,2007A&A...464..399H}, this reduction can also offset any loss of information from the compression. \FrL{hummm but we still do need a full covariance in the compression algorithm, right?} \FrL{And we still do need to invert it... is the idea rather that if we dont have a perfect matrix at that stage the worse that can happen is sub optimal compression?}\JEC{Well there are several ways that $C$ can be questioned: parameter dependence (ie. fiducial model/true model), non-gaussianities, errors... So not sure that all these effects induce only sub-optimal compression. But it may be out of the scope of this paragraph/paper.}
 
 Another key advantage of the MOPED algorithm is to eliminate the need of large covariance matrix inversion of size $N\times N$ requiring $O(N^3)$ operations. This inversion takes place not only for the Fisher matrix computation (Eq.~\ref{eq:fisher_way2}, but more importantly in the log-likelihood computation (see the snippet of the previous section). The MOPED algorithm reduces the complexity to $O(M)$ operations.
 
