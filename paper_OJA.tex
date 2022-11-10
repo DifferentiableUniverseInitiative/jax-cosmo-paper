@@ -699,7 +699,7 @@ The function $\mathcal{L}(\lambda)$ is the cost function used in practice. It is
 where the \textit{guide} in the \numpyro\ library may be a multi-variate Gaussian distribution (MVN) for instance.
 
 Using the auto-differentation tool, one can use ``black-box'' guides (aka \textit{automatic differentiation variational inference}). As stated by the authors of \citep{2016arXiv160300788K} ADVI helps specifying a variational family appropriate to the model, computing the corresponding objective
-function, taking derivatives, and running a gradient-based or coordinate-ascent optimization. First is defined a bijective differentiable transformation $T$ of the original latent variables $z$ into new variables $\xi$, such $\xi=T(z)$ and $z=T^{-1}(\xi)$. One can develop ``AutoGuides'' (\numpyro\ terminology) that can be adapted to the user models. Then, the cost function reads
+function, taking derivatives, and running a gradient-based or coordinate-ascent optimization. First is defined a invertible differentiable transformation $T$ of the original latent variables $z$ into new variables $\xi$, such $\xi=T(z)$ and $z=T^{-1}(\xi)$. The main advantage of this reparametrisation is that the minimization can be performed with no bound constraints. One can develop ``AutoGuides'' (\numpyro\ terminology) that can be adapted to the user models. Then, the cost function reads
 \begin{equation}
 \mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{q(\xi;\lambda)}\left[ \log q(\xi;\lambda)\right]}_{guide} - \underbrace{\mathbb{E}_{q(\xi;\lambda)}\left[ \log p(\xi,\mathcal{D}) \right]}_{model}
 \label{eq-loss-svi-2}
@@ -708,14 +708,15 @@ with
 \begin{equation}
 p(\xi,\mathcal{D}) \bydef p(T^{-1}(\xi),\mathcal{D}) |J_{T^{-1}}(\xi)|
 \end{equation}
-which exhibit the Jacobian of the $T^{-1}$ transformation. The main advantage of this reparametrisation is that the minimization can be performed with no bound constraints. \FrL{we should say that before.}
-
-Now, one is faced with the evaluation of the expectations during gradient descent. The solution is to use what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \citep{2015arXiv150603431K}). Let us illustrate the trick in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
+which exhibit the Jacobian of the $T^{-1}$ transformation.
+\JEC{
+The evaluation of the expectations during gradient descent of the loss Eq.~\ref{eq-loss-svi-2} can be done using what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \cite{2015arXiv150603431K}).  Let us illustrated the method using an invertible transformation (aka \textit{normalizing flow})  $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, such that $\zeta\sim \mathcal{N}(0,I)$. The Jacobian of this distribution is 1 by definition (volume conservation), so the lost function reads
 \begin{multline}
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
 \label{eq-loss-svi-3}
 \end{multline}
-where $\mathbb{H}(q)$ is the Shannon entropy of the MVN distribution which is independent of the model, so its gradient can be computed once for all and reused in any user model. \FrL{Hummm this is a little bit too specific, in practice I would use a flow rather than an MVN.... Maybe this can go to an appendix for people who want to understand how this works on a concrete example?} Then,
+where $\mathbb{H}(q)$ is the Shannon entropy of the $q$ distribution, so its gradient can be computed once for all for a given $q$ distribution family and reused in any user model.  
+Then,
 to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the expectation which leads to\footnote{To simplify the notation, $T^{-1}(S_\lambda^{-1}(\zeta))$ has been replaced by $z$.}
 \begin{multline}
 -\nabla_\lambda\mathcal{L}(\lambda) = \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
@@ -725,19 +726,12 @@ to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the
 + \nabla_\lambda \mathbb{H}[q(\xi;\lambda)]
 \label{eq-loss-svi-4}
 \end{multline}
-For the use case of the MVN (auto)guide, one gets
-\begin{align}
--\nabla_\mu \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
-\nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)]
-+ \nabla_\xi \log|J_{T^{-1}}(\xi)|
-\right\} \nn \\
--\nabla_L \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
-\left[ \nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)] \right.\right. \nn\\
-&\left. \left. \qquad\qquad\qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right] \times \xi^T 
-\right\}+ (L^{-1})^T
-\end{align}
-\FrL{Yeah. this is way TMI, and also goes against the idea that with autodiff we don't need to manually work out all these details.} \FrL{let's move the MVN details to an appendix.}
-The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX. Now even if one can sample from the optimized  $q(z,\lambda^\ast)$ distribution, we have used SVI as front-end to a NUTS sampler which is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}. \FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
+An concrete example of the gradient formula is given in Appendix \ref{app-SVI_MVN} with the multivariate Gaussian distribution family used as the guide.
+}%JEC
+%
+
+
+One can sample from the optimized  $q(z,\lambda^\ast)$ distribution, we have used SVI as front-end to a NUTS sampler which is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}. \FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
 \FrL{we don't have plots of just the VI?}\JEC{Good point: I have SVI alone with both MVN or Block Neural Autoregressive Flow. The contours are narrower which would require to elaborate...}
 %
 \subsubsection{Neural Transport}
@@ -1025,6 +1019,30 @@ mcmc.run(jax.random.PRNGKey(42))
 \end{lstlisting}
 %\end{minted}
 More details can be found in the repository of this paper to perform a \numpyro\ modeling using \jaxcosmo : a structured NUTS sampling described in Section~\ref{sec-NUTS} \nblink{VectorizedNumPyro_block}, and a SVI optimisation followed by NUTS sampling of Section~\ref{sec-Neural-Reparametrisation} \nblink{DESY_Y1_shear_cluster_ModelReparam_SVI-MVN_Neutra_NUTS}. Notice however that the notebooks are only illustrative and for a real sample production the authors invite the reader to run their own script.
+
+\section{SVI example with MVN guide}
+\label{app-SVI_MVN}
+\JEC{To be cleaned}
+Let us illustrate the trick in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
+\begin{multline}
+-\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
+\label{eq-loss-svi-3}
+\end{multline}
+where $\mathbb{H}(q)$ is the Shannon entropy of the MVN distribution which is independent of the model, so its gradient can be computed once for all and reused in any user model.  
+For the use case of the MVN (auto)guide, one gets
+\begin{align}
+-\nabla_\mu \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
+\nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)]
++ \nabla_\xi \log|J_{T^{-1}}(\xi)|
+\right\} \nn \\
+-\nabla_L \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
+\left[ \nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)] \right.\right. \nn\\
+&\left. \left. \qquad\qquad\qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right] \times \xi^T 
+\right\}+ (L^{-1})^T
+\end{align}
+\FrL{Yeah. this is way TMI, and also goes against the idea that with autodiff we don't need to manually work out all these details.} \FrL{let's move the MVN details to an appendix.}
+The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX.
+
 %% If you have bibdatabase file and want bibtex to generate the
 %% bibitems, please use
 %%
