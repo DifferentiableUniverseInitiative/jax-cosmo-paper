@@ -671,8 +671,8 @@ The results in terms of relative effective sample sizes (aka ``ESS'') are detail
 %
 \begin{figure*}
 \centering
-\includegraphics[width=1.5\columnwidth]{figures/Cobaya-NUTS-SVI200.png}
-\caption{Constraints (30\%, 68\%, 90\%) on 4 of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using the \texttt{Cobaya} Metropolis-Hastings sampler (full curve in blue, 70,000 samples), the  NUTS sampling described in section \ref{sec-NUTS} (dashed curve in red; 16,000 samples), and a SVI MVN optimisation followed by a Naural Transport parametrisation to run a NUTS sampling (dashed-dotted curve in green, 200 samples).}
+\includegraphics[width=1.5\columnwidth]{figures/fig_Cobaya-NUTS-SVI200_v1.pdf}
+\caption{Constraints (30\%, 68\%, 90\%) on 4 of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using the \texttt{Cobaya} Metropolis-Hastings sampler (full curve in blue, 70,000 samples), the  NUTS sampling described in section \ref{sec-NUTS} (dashed curve in red; 16,000 samples), and a SVI MVN optimisation followed by a Neural Transport parametrisation to run a NUTS sampling (dashed-dotted curve in green, 200 samples).}
 \label{fig_cobaya_NUTS_SVI}
 \end{figure*}
 
@@ -710,7 +710,7 @@ p(\xi,\mathcal{D}) \bydef p(T^{-1}(\xi),\mathcal{D}) |J_{T^{-1}}(\xi)|
 \end{equation}
 which exhibit the Jacobian of the $T^{-1}$ transformation.
 \JEC{
-The evaluation of the expectations during gradient descent of the loss Eq.~\ref{eq-loss-svi-2} can be done using what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \cite{2015arXiv150603431K}).  Let us illustrated the method using an invertible transformation (aka \textit{normalizing flow})  $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, such that $\zeta\sim \mathcal{N}(0,I)$. The Jacobian of this distribution is 1 by definition (volume conservation), so the lost function reads
+The evaluation of the expectations during gradient descent of the loss Eq.~\ref{eq-loss-svi-2} can be done using what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \cite{2015arXiv150603431K}).  Let us illustrated the method using an invertible transformation (aka \textit{normalizing flow})  $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, such that $\zeta\sim \mathcal{N}(0,I)$\footnote{Notice that $z=T^{-1}(\xi)=(T^{-1} \circ S_\lambda^{-1})(\zeta)=(S_\lambda \circ T)^{-1}(\zeta)=F_\lambda(\zeta)$.}. The Jacobian of this distribution is 1 by definition (volume conservation), so the lost function reads
 \begin{multline}
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
 \label{eq-loss-svi-3}
@@ -729,60 +729,73 @@ to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the
 An concrete example of the gradient formula is given in Appendix \ref{app-SVI_MVN} with the multivariate Gaussian distribution family used as the guide.
 }%JEC
 %
-
-
-One can sample from the optimized  $q(z,\lambda^\ast)$ distribution, we have used SVI as front-end to a NUTS sampler which is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}. \FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
+\FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
 \FrL{we don't have plots of just the VI?}\JEC{Good point: I have SVI alone with both MVN or Block Neural Autoregressive Flow. The contours are narrower which would require to elaborate...}
+
+Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{app-DESY1}) where the \texttt{model} is described and the \texttt{cl_obs} are the observed $C_\ell$.}
+\begin{lstlisting}[language=iPython]
+import numpyro.infer.autoguide as autoguide
+from numpyro.infer import SVI, Trace_ELBO
+from numpyro.optim import Adam
+# choose a SVI guide 
+guide = autoguide.AutoMultivariateNormal(model,
+        init_loc_fn=numpyro.infer.init_to_median())
+# SVI optimisation 
+optimizer = numpyro.optim.Adam(1e-3)
+svi = SVI(model_spl, guide,optimizer,loss=Trace_ELBO(num_particles=10))
+svi_result = svi.run(jax.random.PRNGKey(0),20_000, cl_obs)
+#To get samples from SVI approximated posterior 
+samples = guide.sample_posterior(jax.random.PRNGKey(1), svi_result.params, sample_shape=(100_000,))
+\end{lstlisting}
+%
+\JEC{Once the optimisation is done on gets $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a MultiVariate Normal distribution (MVN) and a Block Nueral Autoregressive Flow (BNAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The SVI optimization has been performed with the Adam optimizer \citep{2014arXiv1412.6980K} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 steps to ensure a good convergence of the ELBO loss, but no particular tuning of the optimizer has been undertaken to decrease the number of steps. It takes about 2 hours on the NVidia V100 GPU}.  \FrL{Arf... 2 hours !} 
+
+
+\JEC{
+In the figure \ref{fig_cobaya_SVIs} we compare the contours obtained with \texttt{Cobaya} (Fig.~\ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and BNAF guides for the SVI}. \JEC{\textit{Add comments on the fact that BNAF looks ok, while MVN is much narrower}}
+
+%
+\begin{figure*}
+\centering
+\includegraphics[width=1.5\columnwidth]{figures/fig_Cobaya_SVIs_v1.pdf}
+\caption{Same configuration as in Figure \ref{fig_cobaya_NUTS_SVI} but using sampling of approximated perameter posteriorf using SVI with MVN and BNAF guides compared to \texttt{Cobaya} sampling.}
+\label{fig_cobaya_SVIs}
+\end{figure*}
+%
+
+One benefit of SVI is to get a rather quick estimate of an approximated posterior which can serve as front-end to a NUTS sampler. This techniques  is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}. 
 %
 \subsubsection{Neural Transport}
 \label{sec-Neural-Reparametrisation}
 %
-If the SVI method can be used as is to get $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution, the \textit{Neural Transport MCMC} method \citep{2014arXiv1412.5492P,2019arXiv190303704H} is an efficient way to boost HMC efficiency, especially in target distribution unfavourable geometry where for instance the leapfrog integration algorithm has to face squeezed join distributions for a subset of variables. From SVI, one obtains a first approximation of the target distribution and we show that the change-of-variable $z=F_\lambda(\zeta)$ is such that
+If the SVI method can be used as is to get $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution as shown on the previous section, the \textit{Neural Transport MCMC} method \citep{2014arXiv1412.5492P,2019arXiv190303704H} is an efficient way to boost HMC efficiency, especially in target distribution unfavourable geometry where for instance the leapfrog integration algorithm has to face squeezed join distributions for a subset of variables. From SVI, one obtains a first approximation of the target distribution and we show that the change-of-variable $z=F_\lambda(\zeta)$ (eg. $F_\lambda=T^{-1}\circ S^{-1}_\lambda$) is such that
 \begin{equation}
 q(z;\lambda) \rightarrow q(\zeta;\lambda) \bydef q(F_\lambda(\zeta)) |J_{F_\lambda}(\zeta)|
 \end{equation}
-which is evaluated with optimal $\lambda^\ast$ according to maximization of the ELBO (eg. $F_\lambda=T^{-1}\circ S^{-1}_\lambda$). So, one can use a HMC sampler (eg. NUTS) based on $p(\zeta;\mathcal{D})$ distribution, initialized with $\zeta$ samples from $q(\zeta;\lambda^\ast)$, to get a Markov Chain of $N$ samples $(\zeta_i)_{i<N}$. Then, from the transformation  $z_i=F_{\lambda^\ast}(\zeta_i)$ one finally obtain a Marcov Chain with $(z_i)_{i<N}$ samples. The method is accessible throw the \verb|NeuTraReparam| in \numpyro\ library.
-
-%\begin{figure}
-%\includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x200.pdf}
-%\caption{Constraints (30\%, 68\%, 90\%) on 4 of the 22 parameters of a simulated DES-Y1 3x2pt likelihood, in blue the NUTS sampling described in section \ref{sec-NUTS}, and in orange a SVI MVN optimisation followed by a Naural Transport parametrisation to run a NUTS sampling (1 chain of 200 warm followed by 200 samples; a dense mass matrix and \texttt{max\_tree\_depth} parameter set to 5).}
-%\label{fig_svi_nuts_1}
-%\end{figure}
-
-%\begin{figure}
-%\includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x1000.pdf}
-%\caption{Same as Fig.~\ref{fig_svi_nuts_1} but with 1 chain of 200 warm followed by 1000 samples for the NUTS sampler after SVI optimization.}
-%\label{fig_svi_nuts_2}
-%\end{figure}
-%
-%\begin{figure}
-%\includegraphics[width=\columnwidth]{figures/SVI_NUTS_10x200x1000.pdf}
-%\caption{Same as Fig.~\ref{fig_svi_nuts_1} but with 10 chains of 200 warm followed by 1000 samples for the NUTS sampler (\texttt{max\_tree\_depth=5}) after SVI optimization.}
-%\label{fig_svi_nuts_3}
-%\end{figure}
-
-%\begin{figure}
-%\includegraphics[width=\columnwidth]{figures/SVI_NUTS_1x200x200_bis.pdf}
-%\caption{
-%Constraints (30\%, 68\%, 90\%) on the five lens galaxy bias. In blue the NUTS sampling described in section \ref{sec-NUTS}, and in red a SVI MVN optimisation followed by a Naural Transport parametrisation to run a NUTS sampling (1 chain of 200 warm followed by 200 samples; a dense mass matrix and \texttt{max\_tree\_depth} parameter set to 5).}
-%\label{fig_svi_nuts_4}
-%\end{figure}
-
-\begin{figure}
+which is evaluated with optimal $\lambda^\ast$ according to maximization of the ELBO. So, one can use a HMC sampler (eg. NUTS) based on $p(\zeta;\mathcal{D})$ distribution, initialized with $\zeta$ samples from $q(\zeta;\lambda^\ast)$, to get a Markov Chain of $N$ samples $(\zeta_i)_{i<N}$. Then, from the transformation  $z_i=F_{\lambda^\ast}(\zeta_i)$ one finally obtain a Marcov Chain with $(z_i)_{i<N}$ samples. 
+\begin{figure*}
 \centering
-\includegraphics[width=\columnwidth]{figures/Cobaya-NUTS-SVI200_bis.png}
+\includegraphics[width=1.5\columnwidth]{figures/fig_Cobaya-NUTS-SVI200_bis_v1.pdf}
 \caption{Same configuration as in Figure \ref{fig_cobaya_NUTS_SVI} but for the highly correlated five lens galaxy bias.}
 \label{fig_cobaya_NUTS_SVI_bis}
-\end{figure}
+\end{figure*}
 
 
-Using the same DES-Y1 simulation as in previous section, we use a MVN distribution as \textit{guide} to approximate the true posterior (\textit{model}) and feed a SVI. The SVI optimization has been performed with the Adam optimizer \citep{2014arXiv1412.6980K} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 steps to ensure a good convergence of the ELBO loss, but no particular tuning of the optimizer has been undertaken to decrease the number of steps. It takes 2 hours on the NVidia V100 GPU. \FrL{Arf... 2 hours !}
+\JEC{The SVI optim is described in the SVI section, so the following show be rephrased.}
 
-Then, we have used the Neural Transport method to generate Markov Chains of different sizes by the NUTS sampler, the chains have run 200 warm samples, and then 200 samples (``low'' schema), 1000 samples on a single chain, and finally we have run 10 chains  with 1000 samples each. All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of these 3 runs is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the ``low'' schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
+Using the MVN guided SVI described in the previous section applying the \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as followed:
+\begin{lstlisting}[language=iPython]
+from numpyro.infer.reparam import NeuTraReparam
+# Reparametrisation of model to feed NUTS sampler
+neutra = NeuTraReparam(guide, svi_result.params)
+neutra_model = neutra.reparam(model_spl) 
+\end{lstlisting}
+%
+The NUTS sampler has run 1 chain of 200 samples (``low'' schema), 1 chain with 1000 samples and 10 chains  with 1000 samples each (each setup starts all chains with 200 samples for initialisation). All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of the 3 setups is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the ``low'' schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
 
 Results in terms of sampling efficiency are shown on Table~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to ease the model development in its early phase.
 %
-\subsection{Results}
+\subsection{\JEC{Sampling efficiency}}
 \label{sec-results}
 %
 To a large extend looking at results of Table~\ref{tab-ESS-NUTS_SVI-1}, the key question is: what is the HMC/NUTS gain compared to the well known highly optimized \texttt{Cobaya} sampler? 
@@ -816,11 +829,10 @@ So, the authors think that it is worth considering methods like HMC/NUTS that by
 \hline
 \end{tabular}
 \end{table}
-
-
-\section{Discussion}
+%
+\section{General discussion}
 \label{sec-discussion}
-
+%
 Having demonstrated the interest of \jaxcosmo\ as a differentiable cosmology library library, we now discuss several limitations, and open questions.
 
 %Lack of autodiff Boltzmann code (emulator)
@@ -965,7 +977,7 @@ cl, C = gaussian_cl_covariance_and_mean(cosmo,
                  f_sky=0.25, sparse=True)
 \end{lstlisting}
 %\end{minted} 
-with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
+with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data (\texttt{cl_obs}) yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
 %\begin{minted}[fontsize=\footnotesize]{python}
 \begin{lstlisting}[language=iPython]
 fiducial_model = condition(model,
@@ -978,7 +990,7 @@ fiducial_model = condition(model,
       })
 
 with seed(rng_seed=42):
-    data, P, C = fiducial_model()
+    cl_obs, P, C = fiducial_model()
 \end{lstlisting}
 %\end{minted}
 
@@ -1020,10 +1032,9 @@ mcmc.run(jax.random.PRNGKey(42))
 %\end{minted}
 More details can be found in the repository of this paper to perform a \numpyro\ modeling using \jaxcosmo : a structured NUTS sampling described in Section~\ref{sec-NUTS} \nblink{VectorizedNumPyro_block}, and a SVI optimisation followed by NUTS sampling of Section~\ref{sec-Neural-Reparametrisation} \nblink{DESY_Y1_shear_cluster_ModelReparam_SVI-MVN_Neutra_NUTS}. Notice however that the notebooks are only illustrative and for a real sample production the authors invite the reader to run their own script.
 
-\section{SVI example with MVN guide}
+\section{\JEC{SVI example with MVN guide}}
 \label{app-SVI_MVN}
-\JEC{To be cleaned}
-Let us illustrate the trick in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
+Let us illustrate the \texit{elliptical standardisation} described in section \label{ec-SVI} in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
 \begin{multline}
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
 \label{eq-loss-svi-3}
@@ -1032,17 +1043,14 @@ where $\mathbb{H}(q)$ is the Shannon entropy of the MVN distribution which is in
 For the use case of the MVN (auto)guide, one gets
 \begin{align}
 -\nabla_\mu \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
-\nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)]
-+ \nabla_\xi \log|J_{T^{-1}}(\xi)|
-\right\} \nn \\
+\nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)] \right. \nn \\
+& \left. \qquad \qquad \qquad \qquad \qquad \qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right\} \nn \\
 -\nabla_L \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
 \left[ \nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)] \right.\right. \nn\\
 &\left. \left. \qquad\qquad\qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right] \times \xi^T 
 \right\}+ (L^{-1})^T
 \end{align}
-\FrL{Yeah. this is way TMI, and also goes against the idea that with autodiff we don't need to manually work out all these details.} \FrL{let's move the MVN details to an appendix.}
-The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX.
-
+\FrL{Yeah. this is way TMI, and also goes against the idea that with autodiff we don't need to manually work out all these details.} The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX.
 %% If you have bibdatabase file and want bibtex to generate the
 %% bibitems, please use
 %%
