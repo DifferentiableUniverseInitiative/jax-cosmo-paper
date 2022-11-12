@@ -732,7 +732,7 @@ An concrete example of the gradient formula is given in Appendix \ref{app-SVI_MV
 \FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
 \FrL{we don't have plots of just the VI?}\JEC{Good point: I have SVI alone with both MVN or Block Neural Autoregressive Flow. The contours are narrower which would require to elaborate...}
 
-Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{app-DESY1}) where the \texttt{model} is described and the \texttt{cl_obs} are the observed $C_\ell$.}
+Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{app-DESY1}) where the \texttt{model} is described and the \texttt{cl\_obs} are the observed $C_\ell$.}
 \begin{lstlisting}[language=iPython]
 import numpyro.infer.autoguide as autoguide
 from numpyro.infer import SVI, Trace_ELBO
@@ -970,7 +970,7 @@ cl, C = gaussian_cl_covariance_and_mean(cosmo,
                  f_sky=0.25, sparse=True)
 \end{lstlisting}
 %\end{minted} 
-with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data (\texttt{cl_obs}) yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
+with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data (\texttt{cl\_obs}) yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
 %\begin{minted}[fontsize=\footnotesize]{python}
 \begin{lstlisting}[language=iPython]
 fiducial_model = condition(model,
@@ -1027,10 +1027,10 @@ More details can be found in the repository of this paper to perform a \numpyro\
 
 \section{\JEC{SVI example with MVN guide}}
 \label{app-SVI_MVN}
-Let us illustrate the \texit{elliptical standardisation} described in section \label{ec-SVI} in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
+Let us illustrate the \textit{elliptical standardisation} described in section \label{ec-SVI} in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
 \begin{multline}
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
-\label{eq-loss-svi-3}
+\label{eq-loss-svi-3b}
 \end{multline}
 where $\mathbb{H}(q)$ is the Shannon entropy of the MVN distribution which is independent of the model, so its gradient can be computed once for all and reused in any user model.  
 For the use case of the MVN (auto)guide, one gets
