@@ -750,9 +750,8 @@ samples = guide.sample_posterior(jax.random.PRNGKey(1), svi_result.params, sampl
 %
 \JEC{Once the optimisation is done on gets $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a MultiVariate Normal distribution (MVN) and a Block Nueral Autoregressive Flow (BNAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The SVI optimization has been performed with the Adam optimizer \citep{2014arXiv1412.6980K} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 steps to ensure a good convergence of the ELBO loss, but no particular tuning of the optimizer has been undertaken to decrease the number of steps. It takes about 2 hours on the NVidia V100 GPU}.  \FrL{Arf... 2 hours !} 
 
-
 \JEC{
-In the figure \ref{fig_cobaya_SVIs} we compare the contours obtained with \texttt{Cobaya} (Fig.~\ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and BNAF guides for the SVI}. \JEC{\textit{Add comments on the fact that BNAF looks ok, while MVN is much narrower}}
+In the figure \ref{fig_cobaya_SVIs}, we compare the contours obtained with \texttt{Cobaya} as in figure \ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and BNAF guides for the SVI.  As mentioned in \cite{NEURIPS2020_7cac11e2} one challenge with variational inference is assessing how close the variational approximation $q(z,\lambda^\ast)$ is to the true posterior distribution. It is not in the scope of this article to elaborate a statistical diagnostics, rather we show that with SVI, one can get a quick estimate of the posterior which can serve as front-end to a NUTS sampler. This techniques is described in the next section.} 
 
 %
 \begin{figure*}
@@ -762,8 +761,6 @@ In the figure \ref{fig_cobaya_SVIs} we compare the contours obtained with \textt
 \label{fig_cobaya_SVIs}
 \end{figure*}
 %
-
-One benefit of SVI is to get a rather quick estimate of an approximated posterior which can serve as front-end to a NUTS sampler. This techniques  is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}. 
 %
 \subsubsection{Neural Transport}
 \label{sec-Neural-Reparametrisation}
@@ -779,11 +776,7 @@ which is evaluated with optimal $\lambda^\ast$ according to maximization of the 
 \caption{Same configuration as in Figure \ref{fig_cobaya_NUTS_SVI} but for the highly correlated five lens galaxy bias.}
 \label{fig_cobaya_NUTS_SVI_bis}
 \end{figure*}
-
-
-\JEC{The SVI optim is described in the SVI section, so the following show be rephrased.}
-
-Using the MVN guided SVI described in the previous section applying the \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as followed:
+The \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as followed:
 \begin{lstlisting}[language=iPython]
 from numpyro.infer.reparam import NeuTraReparam
 # Reparametrisation of model to feed NUTS sampler
@@ -791,7 +784,7 @@ neutra = NeuTraReparam(guide, svi_result.params)
 neutra_model = neutra.reparam(model_spl) 
 \end{lstlisting}
 %
-The NUTS sampler has run 1 chain of 200 samples (``low'' schema), 1 chain with 1000 samples and 10 chains  with 1000 samples each (each setup starts all chains with 200 samples for initialisation). All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of the 3 setups is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the ``low'' schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
+We have used the MVN guided SVI described in the previous section even if it may be not the best choice. The NUTS sampler has run 1 chain of 200 samples (``low'' schema), 1 chain with 1000 samples and 10 chains  with 1000 samples each (each setup starts all chains with 200 samples for initialisation). All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of the 3 setups is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the ``low'' schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
 
 Results in terms of sampling efficiency are shown on Table~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to ease the model development in its early phase.
 %
