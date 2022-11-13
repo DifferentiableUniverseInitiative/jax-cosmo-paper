@@ -253,7 +253,7 @@ The aim of this session is to provide a brief technical primer on JAX, necessary
 
 \paragraph{Automatic Differentiation} Traditionally, two different approaches have been used in cosmology to obtain derivatives of given numerical expressions.
 
-The first approach is to derive analytically the formula for the derivatives of interest \citep{BORG}, with or without the help of tools such as \texttt{Mathematica}. This is however only practical typically for simple analytical models.
+The first approach is to derive analytically the formula for the derivatives of interest \citep{2019A&A...625A..64J} \JEC{This reference should be validated by F.L}, with or without the help of tools such as \texttt{Mathematica}\footnote{\url{https://www.wolfram.com/mathematica}.}. This is however only practical typically for simple analytical models.
 
 The second approach is to compute numerical derivatives by finite differences. This approach can be applied on black-box models of abitrary complexity (from Boltzmann codes \FrL{some citations} to cosmological simulations \FrL{some citations}). However it is notoriously difficult to obtain stable derivatives by finite differences \FrL{cite papers trying to do fisher}. In addition, their computational cost does not scale well with the number of parameters (a minimum of $(2N+1)$ model evaluations is typically required for $N$ parameters), making them completely impractical whenever derivatives are needed on the fly.\FrL{this last sentence is not great.}
 
