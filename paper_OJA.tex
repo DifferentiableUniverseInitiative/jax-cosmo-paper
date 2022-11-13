@@ -19,6 +19,12 @@
 \usepackage{lineno}
 \usepackage{fontawesome}
 
+
+\usepackage[
+singlelinecheck=false % <-- important
+]{caption}
+
+
 %to cross out a sentence: \st{Hello World}
 \usepackage{soul}
 
@@ -247,7 +253,7 @@ The aim of this session is to provide a brief technical primer on JAX, necessary
 
 \paragraph{Automatic Differentiation} Traditionally, two different approaches have been used in cosmology to obtain derivatives of given numerical expressions.
 
-The first approach is to derive analytically the formula for the derivatives of interest \citep{BORG}, with or without the help of tools such as \texttt{Mathematica}. This is however only practical typically for simple analytical models.
+The first approach is to derive analytically the formula for the derivatives of interest \citep{2019A&A...625A..64J} \JEC{This reference should be validated by F.L}, with or without the help of tools such as \texttt{Mathematica}\footnote{\url{https://www.wolfram.com/mathematica}.}. This is however only practical typically for simple analytical models.
 
 The second approach is to compute numerical derivatives by finite differences. This approach can be applied on black-box models of abitrary complexity (from Boltzmann codes \FrL{some citations} to cosmological simulations \FrL{some citations}). However it is notoriously difficult to obtain stable derivatives by finite differences \FrL{cite papers trying to do fisher}. In addition, their computational cost does not scale well with the number of parameters (a minimum of $(2N+1)$ model evaluations is typically required for $N$ parameters), making them completely impractical whenever derivatives are needed on the fly.\FrL{this last sentence is not great.}
 
@@ -732,7 +738,7 @@ An concrete example of the gradient formula is given in Appendix \ref{app-SVI_MV
 \FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
 \FrL{we don't have plots of just the VI?}\JEC{Good point: I have SVI alone with both MVN or Block Neural Autoregressive Flow. The contours are narrower which would require to elaborate...}
 
-Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{app-DESY1}) where the \texttt{model} is described and the \texttt{cl_obs} are the observed $C_\ell$.}
+Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{app-DESY1}) where the \texttt{model} is described and the \texttt{cl\_obs} are the observed $C_\ell$.}
 \begin{lstlisting}[language=iPython]
 import numpyro.infer.autoguide as autoguide
 from numpyro.infer import SVI, Trace_ELBO
@@ -750,9 +756,8 @@ samples = guide.sample_posterior(jax.random.PRNGKey(1), svi_result.params, sampl
 %
 \JEC{Once the optimisation is done on gets $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a MultiVariate Normal distribution (MVN) and a Block Nueral Autoregressive Flow (BNAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The SVI optimization has been performed with the Adam optimizer \citep{2014arXiv1412.6980K} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 steps to ensure a good convergence of the ELBO loss, but no particular tuning of the optimizer has been undertaken to decrease the number of steps. It takes about 2 hours on the NVidia V100 GPU}.  \FrL{Arf... 2 hours !} 
 
-
 \JEC{
-In the figure \ref{fig_cobaya_SVIs} we compare the contours obtained with \texttt{Cobaya} (Fig.~\ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and BNAF guides for the SVI}. \JEC{\textit{Add comments on the fact that BNAF looks ok, while MVN is much narrower}}
+In the figure \ref{fig_cobaya_SVIs}, we compare the contours obtained with \texttt{Cobaya} as in figure \ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and BNAF guides for the SVI.  As mentioned in \cite{NEURIPS2020_7cac11e2} one challenge with variational inference is assessing how close the variational approximation $q(z,\lambda^\ast)$ is to the true posterior distribution. It is not in the scope of this article to elaborate a statistical diagnostics, rather we show that with SVI, one can get a quick estimate of the posterior which can serve as front-end to a NUTS sampler. This techniques is described in the next section.} 
 
 %
 \begin{figure*}
@@ -762,8 +767,6 @@ In the figure \ref{fig_cobaya_SVIs} we compare the contours obtained with \textt
 \label{fig_cobaya_SVIs}
 \end{figure*}
 %
-
-One benefit of SVI is to get a rather quick estimate of an approximated posterior which can serve as front-end to a NUTS sampler. This techniques  is described in the next section \ref{sec-Neural-Reparametrisation} and nicknamed as \textit{Neural Transport}. 
 %
 \subsubsection{Neural Transport}
 \label{sec-Neural-Reparametrisation}
@@ -779,11 +782,7 @@ which is evaluated with optimal $\lambda^\ast$ according to maximization of the 
 \caption{Same configuration as in Figure \ref{fig_cobaya_NUTS_SVI} but for the highly correlated five lens galaxy bias.}
 \label{fig_cobaya_NUTS_SVI_bis}
 \end{figure*}
-
-
-\JEC{The SVI optim is described in the SVI section, so the following show be rephrased.}
-
-Using the MVN guided SVI described in the previous section applying the \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as followed:
+The \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as followed:
 \begin{lstlisting}[language=iPython]
 from numpyro.infer.reparam import NeuTraReparam
 # Reparametrisation of model to feed NUTS sampler
@@ -791,7 +790,7 @@ neutra = NeuTraReparam(guide, svi_result.params)
 neutra_model = neutra.reparam(model_spl) 
 \end{lstlisting}
 %
-The NUTS sampler has run 1 chain of 200 samples (``low'' schema), 1 chain with 1000 samples and 10 chains  with 1000 samples each (each setup starts all chains with 200 samples for initialisation). All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of the 3 setups is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the ``low'' schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
+We have used the MVN guided SVI described in the previous section even if it may be not the best choice. The NUTS sampler has run 1 chain of 200 samples (``low'' schema), 1 chain with 1000 samples and 10 chains  with 1000 samples each (each setup starts all chains with 200 samples for initialisation). All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of the 3 setups is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the ``low'' schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
 
 Results in terms of sampling efficiency are shown on Table~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to ease the model development in its early phase.
 %
@@ -977,7 +976,7 @@ cl, C = gaussian_cl_covariance_and_mean(cosmo,
                  f_sky=0.25, sparse=True)
 \end{lstlisting}
 %\end{minted} 
-with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data (\texttt{cl_obs}) yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
+with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data (\texttt{cl\_obs}) yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
 %\begin{minted}[fontsize=\footnotesize]{python}
 \begin{lstlisting}[language=iPython]
 fiducial_model = condition(model,
@@ -1034,10 +1033,10 @@ More details can be found in the repository of this paper to perform a \numpyro\
 
 \section{\JEC{SVI example with MVN guide}}
 \label{app-SVI_MVN}
-Let us illustrate the \texit{elliptical standardisation} described in section \label{ec-SVI} in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
+Let us illustrate the \textit{elliptical standardisation} described in section \label{ec-SVI} in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
 \begin{multline}
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
-\label{eq-loss-svi-3}
+\label{eq-loss-svi-3b}
 \end{multline}
 where $\mathbb{H}(q)$ is the Shannon entropy of the MVN distribution which is independent of the model, so its gradient can be computed once for all and reused in any user model.  
 For the use case of the MVN (auto)guide, one gets
