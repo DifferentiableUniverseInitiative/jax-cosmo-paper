@@ -393,7 +393,7 @@ with $R_8 = 8$ in unit of Mpc and $W(x)$ is related to the $j_1$ spherical Besse
 \end{equation}
 Finally, the factors $m_i$ are equal to $(0,-2)$ for the \texttt{NumberCounts}, \texttt{WeakLensing} related kernels, respectively. 
 
-Remarkably, all the integrals involved in these computations can be  differentiated with respect to the cosmological parameters thanks to \textit{autodiff} and the implementation of the above mentioned integration quadrature \FrL{Are we using quadratures currently? I think by default we are using simple Simpson no?}\JEC{Correct: the current pip version uses Simpson but it is a quadrature even if it is qualified "simple".}.  An example is given in the context of DES Y1 3x2pts analysis (Appendix~\ref{app-DESY1}).
+Remarkably, all the integrals involved in these computations can be  differentiated with respect to the cosmological parameters thanks to \textit{autodiff} and the implementation of the above mentioned integration quadrature \FrL{Are we using quadratures currently? I think by default we are using simple Simpson no?}\JEC{Correct: the current pip version uses Simpson but it is a quadrature even if it is qualified "simple".}.  An example is given in the context of DES Y1 3x2pts analysis (Sec~\ref{sec-DESY1}).
 %
 \subsection{Validation against the Core Cosmology Library (CCL)}
 %
@@ -584,6 +584,128 @@ In the following sections we review some statistical methods which directly bene
 % and NUTS after a \textit{Neural Transport} perform using a \textit{Stochastic Variational Inference} (aka SVI). All  the methods have been implemented using the \numpyro\ probabilistic programming language (PPL). 
 %
 %
+
+
+\subsection{Description of the DES-Y1 exercise}
+\label{sec-DESY1}
+\JEC{Transfer of the model context from apprndix to here to ease the reading.}
+
+
+From the DES server\footnote{\url{http://desdr-server.ncsa.illinois.edu/despublic/y1a1_files/chains/2pt_NG_mcal_1110.fit}} we have extracted the $N(z)$ distributions of the sources and normalize them to $[1.47, 1.46, 1.50, 0.73]$ effective number of sources per $\mathrm{arcmin}^2$ for each of the four redshift bins, respectively. The lens distributions $N(z)$ for five redshift bins are also extracted. The corresponding shapes of the different distributions are performed thanks to \texttt{jc.redshift.kde\_nz} function (``\texttt{jc}'' hereafter stands for \texttt{jax\_cosmo}) and are presented in Figure \ref{fig-DESY1-src-lens-redshift}.
+\begin{figure}
+\centering
+\includegraphics[height=3cm]{figures/DESY1-source-redshift.png}
+\includegraphics[height=3cm]{figures/DESY1-lens-redshift.png}
+\caption{Distributions of the sources and lenses for the different redshift bins considered.}
+\label{fig-DESY1-src-lens-redshift}
+\end{figure}
+\begin{table}[htb]
+\caption{Priors of the 21 variables of the DES-Y1 of the 3x2pt likelihood (number counts and shear).}
+\label{tab-DESY1}
+ \centering
+\begin{tabular}{ccccccccccc}
+\hline
+ parameter &  prior \\
+ \hline
+  \multicolumn{2}{c}{\textbf{Cosmology}} \\
+$\Omega_c$ & $\mathcal{U}[0.10, 0.9]$ \\ %JEC 21/10/22 there was exchanges in Omega_c, sigma8, Omega_b intervalle (but ok in the notebooks)
+$\sigma_8$ & $\mathcal{U}[0.40, 1.0]$ \\
+$\Omega_b$ & $\mathcal{U}[0.03, 0.07]$ \\
+$w_0$ & $\mathcal{U}[-2.00, -0.33]$ \\
+$h$ & $\mathcal{U}[0.55, 0.91]$ \\
+$n_s$ & $\mathcal{U}[0.87, 1.07]$ \\
+\multicolumn{2}{c}{\textbf{Intrinsic Alignment}} \\
+$A$ & $\mathcal{U}[-5,5]$ \\
+$\eta$ &$\mathcal{U}[-5,5]$ \\
+\multicolumn{2}{c}{\textbf{Lens Galaxy Bias}} \\
+$(b_i)_{i:1,\dots,5}$ & $\mathcal{U}[0.8,3.0]$ \\
+\multicolumn{2}{c}{\textbf{Shear Calibration Systematics}} \\
+$(m_i)_{i:1,\dots,4}$ & $\mathcal{N}[0.012,0.023]$ \\
+\multicolumn{2}{c}{\textbf{Source photo-$z$ shift}} \\
+$dz_1$ & $\mathcal{N}[0.001,0.016]$ \\ % JEC note the sign is the one we have used but is different from https://arxiv.org/pdf/1708.01530.pdf
+$dz_2$ & $\mathcal{N}[-0.019,0.013]$ \\
+$dz_3$ & $\mathcal{N}[0.009,0.011]$ \\
+$dz_4$ & $\mathcal{N}[-0.018,0.022]$ \\
+\hline
+\end{tabular}
+\end{table}
+
+
+Then, using the \numpyro\ PPL, we have set up a \textit{forward model} following the reference \citep{2018PhRvD..98d3526A}. The prior descriptions of the different model parameters are described in Table \ref{tab-DESY1}.  For instance the $\Omega_c$ parameter is treated as random variable as followed
+%\begin{minted}[fontsize=\footnotesize]{python}
+\begin{lstlisting}[language=iPython]
+Omega_c = numpyro.sample('Omega_c', Uniform(0.1, 0.9))
+\end{lstlisting}
+%\end{minted}
+
+Then, we generate mock angular power spectra $C_\ell$ from the auto \& cross correlations of the Number Counts and Weak Lensing probes computed with the \texttt{gaussian\_cl\_covariance\_and\_mean} function in the \texttt{jc.angular\_cl} module. One reads
+%\begin{minted}[fontsize=\footnotesize]{python}
+\begin{lstlisting}[language=iPython]
+# Define the lensing and number counts probe
+probes = [jc.probes.WeakLensing(nzs_s_sys, 
+                       ia_bias=b_ia,
+                       multiplicative_bias=m),
+          jc.probes.NumberCounts(nzs_l, b)]
+cl, C = gaussian_cl_covariance_and_mean(cosmo, 
+                 ell, probes, 
+                 f_sky=0.25, sparse=True)
+\end{lstlisting}
+%\end{minted} 
+with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data (\texttt{cl\_obs}) yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
+%\begin{minted}[fontsize=\footnotesize]{python}
+\begin{lstlisting}[language=iPython]
+fiducial_model = condition(model,
+    {'Omega_c':0.2545, 'sigma8':0.801, 
+    'h':0.682, 'Omega_b':0.0485, 'w0':-1.,'n_s':0.971,
+     'A':0.5,'eta':0.,
+     'm1':0.0,'m2':0.0,'m3':0.0,'m4':0.0,
+     'dz1':0.0,'dz2':0.0,'dz3':0.0,'dz4':0.0,
+     'b1':1.2,'b2':1.4,'b3':1.6,'b4':1.8,'b5':2.0
+      })
+
+with seed(rng_seed=42):
+    cl_obs, P, C = fiducial_model()
+\end{lstlisting}
+%\end{minted}
+
+The \textit{inference model} looks very similar to the \textit{forward model} excepts that first we fix the angular power spectra covariance matrix $C$ (and its inverse $P$) and secondly we let \numpyro\ generates the model $C_{\ell}$ from the priors
+%\begin{minted}[fontsize=\footnotesize]{python}
+\begin{lstlisting}[language=iPython]
+cl = jc.angular_cl.angular_cl(cosmo, ell, 
+                              probes).flatten()
+return numpyro.sample('cl', MultivariateNormal(cl, 
+                            precision_matrix=P,
+                            covariance_matrix=C))
+\end{lstlisting}
+%\end{minted}
+
+These theoretical $C_{\ell}$ are in turn conditioned by the mock $C_\ell$ as followed
+%\begin{minted}[fontsize=\footnotesize]{python}
+\begin{lstlisting}[language=iPython]
+observed_model = condition(model, {'cl': data})
+\end{lstlisting}
+%\end{minted}
+%Then, as an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as followed
+%\begin{minted}[fontsize=\footnotesize]{python}
+%\begin{lstlisting}[language=iPython]
+%nuts_kernel = numpyro.infer.NUTS(observed_model,
+%              step_size=1e-1, 
+%              init_strategy=numpyro.infer.init_to_median,
+%              dense_mass=True,
+%              max_tree_depth=7)
+%
+%mcmc = numpyro.infer.MCMC(nuts_kernel, 
+%                          num_warmup=200, 
+%                          num_samples=1000,
+%                          num_chains=16,
+%                          chain_method='vectorized',
+%                          progress_bar=False)
+%
+%mcmc.run(jax.random.PRNGKey(42))
+%\end{lstlisting}
+%%\end{minted}
+%More details can be found in the repository of this paper to perform a \numpyro\ modeling using \jaxcosmo: a structured NUTS sampling described in Section~\ref{sec-NUTS} \nblink{VectorizedNumPyro_block}, and a SVI optimisation followed by NUTS sampling of Section~\ref{sec-Neural-Reparametrisation} \nblink{DESY_Y1_SVI_and_NeutraReparam}. 
+How to use this model to perform inference is described in the sections \ref{sec-NUTS} and \ref{sec-SVI}.
 %
 \subsection{Vanilla Hamiltonian Monte Carlo}
 %
@@ -666,12 +788,34 @@ The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the
 
 The No-U-Turn (\textit{NUTS})  variant of the traditional HMC sampler has been introduced in \citet{nuts}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. \FrL{\st{Parameters L an epsilon should be introduced at the level of HMC then.}}\JEC{done} So, in an automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls at each generation.
 
-Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class. \FrL{class inheritance is TMI.}  After the forward model creation for the DES-Y1 3x2pts exercise described in Appendix~\ref{app-DESY1} \FrL{We should introduce the model at the beginning of this section.},
+Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class. \FrL{class inheritance is TMI.}  After the forward model creation for the DES-Y1 3x2pts exercise described in section \ref{sec-DESY1} \FrL{We should introduce the model at the beginning of this section.}\JEC{Done}
 \begin{itemize}
     \item \st{a reparametrisation of the latent variable uniform priors to use a unified uniform prior $\mathcal{U}[-5,5]$} \JEC{we have first applyied  an affine transformation on cosmological, intrinsic alignment and biais parameters to use an unique uniform prior $\mathcal{U}[-5,5]$ (Table~\ref{tab-DESY1})}; \FrL{these are not latent variables, but model parameters. Also people don't know what this reparametrisation means.}
     \item  \FrL{People don't know what the warmup phase is...}\JEC{we use a structured mass matrix consisting on essentially a diagonal form  with a block structure for the following sets of parameters} $(\Omega_b,\Omega_c,\sigma_8,w_0,h)$ and $(b_i)_{i:1\dots5}$. This matrix structuring is motivated by the expected degree of correlation of the concerned parameters as can be shown for instance in Figure \ref{fig_cobaya_NUTS_SVI_bis}.
 \end{itemize}
-The NUTS sampler have been running with 16 chains of 1,000 samples each (\texttt{vectorized} option) \FrL{it should explain that vectorized means 16 chains in parallel on a single GPU.} after a warm-up phase consisting of 200 samples, and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). The experiments have been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or an NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapse time for these experiments was 20 hours.
+
+\JEC{As an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as followed with \numpyro:}
+\begin{lstlisting}[language=iPython]
+%nuts_kernel = numpyro.infer.NUTS(observed_model,
+              step_size=1e-1,
+              init_strategy=numpyro.infer.init_to_median,
+              dense_mass=True,
+              max_tree_depth=7)
+
+mcmc = numpyro.infer.MCMC(nuts_kernel, 
+                          num_warmup=200, 
+                          num_samples=1000,
+                          num_chains=16,
+                          chain_method='vectorized',
+                          progress_bar=False)
+
+mcmc.run(jax.random.PRNGKey(42))
+\end{lstlisting}
+
+The NUTS sampler have been running with 16 chains of 1,000 samples each after a warm-up phase consisting of 200 samples, and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). \FrL{it should explain that vectorized means 16 chains in parallel on a single GPU.}
+\JEC{The "vectorized" option runs multi chains in a single GPU thanks to the \jax \textit{vmap} mechanism. If one dispose of several GPUs then the "parallel" option using \textit{pmap}  mechanism runs one chain per GPU. As noted in \numpyro\ MCMC documentation, it is possible to mix parallel and vectorized sampling\footnote{Since version 0.9.0.}.}
+
+The experiments have been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or an NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapse time for these experiments was 20 hours.
 
 The results in terms of relative effective sample sizes (aka ``ESS'') are detailed in Table~\ref{tab-ESS-NUTS_SVI-1} while the confidential level (CL) contours are presented in Figure \ref{fig_cobaya_NUTS_SVI}. One notices the dramatic improvement of the ESS by about a factor 10 using the NUTS sampler compared to the highly-optimized \texttt{Cobaya} Metropolis-Hastings implementation \citep{2019ascl.soft10019T,2021JCAP...05..057T} which has last about 40 hours on CPU to generate 70,000 samples. The CL contours are also in very good agreement. \FrL{we should rephrase this a bit to say that Cobaya is our reference.} It is worth to point out that the mass matrix structuring operation is a very effective as it increases the sampling efficiency by about a factor 2.   Anticipating the Section~\ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective solution to validate the model with fewer samples, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Table~\ref{tab-ESS-NUTS_SVI-1}), then the user is highly encouraged to tune this critical parameter. 
 %
@@ -738,7 +882,7 @@ An concrete example of the gradient formula is given in Appendix \ref{app-SVI_MV
 \FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
 \FrL{we don't have plots of just the VI?}\JEC{Good point: I have SVI alone with both MVN or Block Neural Autoregressive Flow. The contours are narrower which would require to elaborate...}
 
-Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{app-DESY1}) where the \texttt{model} is described and the \texttt{cl\_obs} are the observed $C_\ell$.}
+Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{sec-DESY1}) where the \texttt{model} is described and the \texttt{cl\_obs} are the observed $C_\ell$.}
 \begin{lstlisting}[language=iPython]
 import numpyro.infer.autoguide as autoguide
 from numpyro.infer import SVI, Trace_ELBO
@@ -914,122 +1058,7 @@ Some of the numerical experiments have been conducted at the IN2P3 Computing Cen
 %% appendix sections are then done as normal sections
 \appendix
 
-\section{Description of the DES-Y1 exercise}
-\label{app-DESY1}
-From the DES server\footnote{\url{http://desdr-server.ncsa.illinois.edu/despublic/y1a1_files/chains/2pt_NG_mcal_1110.fit}} we have extracted the $N(z)$ distributions of the sources and normalize them to $[1.47, 1.46, 1.50, 0.73]$ effective number of sources per $\mathrm{arcmin}^2$ for each of the four redshift bins, respectively. The lens distributions $N(z)$ for five redshift bins are also extracted. The corresponding shapes of the different distributions are performed thanks to \texttt{jc.redshift.kde\_nz} function (``\texttt{jc}'' hereafter stands for \texttt{jax\_cosmo}) and are presented in Figure \ref{fig-DESY1-src-lens-redshift}.
-\begin{figure}
-\centering
-\includegraphics[height=3cm]{figures/DESY1-source-redshift.png}
-\includegraphics[height=3cm]{figures/DESY1-lens-redshift.png}
-\caption{Distributions of the sources and lenses for the different redshift bins considered.}
-\label{fig-DESY1-src-lens-redshift}
-\end{figure}
-\begin{table}[htb]
-\caption{Priors of the 21 variables of the DES-Y1 of the 3x2pt likelihood (number counts and shear).}
-\label{tab-DESY1}
- \centering
-\begin{tabular}{ccccccccccc}
-\hline
- parameter &  prior \\
- \hline
-  \multicolumn{2}{c}{\textbf{Cosmology}} \\
-$\Omega_c$ & $\mathcal{U}[0.10, 0.9]$ \\ %JEC 21/10/22 there was exchanges in Omega_c, sigma8, Omega_b intervalle (but ok in the notebooks)
-$\sigma_8$ & $\mathcal{U}[0.40, 1.0]$ \\
-$\Omega_b$ & $\mathcal{U}[0.03, 0.07]$ \\
-$w_0$ & $\mathcal{U}[-2.00, -0.33]$ \\
-$h$ & $\mathcal{U}[0.55, 0.91]$ \\
-$n_s$ & $\mathcal{U}[0.87, 1.07]$ \\
-\multicolumn{2}{c}{\textbf{Intrinsic Alignment}} \\
-$A$ & $\mathcal{U}[-5,5]$ \\
-$\eta$ &$\mathcal{U}[-5,5]$ \\
-\multicolumn{2}{c}{\textbf{Lens Galaxy Bias}} \\
-$(b_i)_{i:1,\dots,5}$ & $\mathcal{U}[0.8,3.0]$ \\
-\multicolumn{2}{c}{\textbf{Shear Calibration Systematics}} \\
-$(m_i)_{i:1,\dots,4}$ & $\mathcal{N}[0.012,0.023]$ \\
-\multicolumn{2}{c}{\textbf{Source photo-$z$ shift}} \\
-$dz_1$ & $\mathcal{N}[0.001,0.016]$ \\ % JEC note the sign is the one we have used but is different from https://arxiv.org/pdf/1708.01530.pdf
-$dz_2$ & $\mathcal{N}[-0.019,0.013]$ \\
-$dz_3$ & $\mathcal{N}[0.009,0.011]$ \\
-$dz_4$ & $\mathcal{N}[-0.018,0.022]$ \\
-\hline
-\end{tabular}
-\end{table}
 
-
-Then, using the \numpyro\ PPL, we have set up a \textit{forward model} following the reference \citep{2018PhRvD..98d3526A}. The prior descriptions of the different model parameters are described in Table \ref{tab-DESY1}.  For instance the $\Omega_c$ parameter is treated as random variable as followed
-%\begin{minted}[fontsize=\footnotesize]{python}
-\begin{lstlisting}[language=iPython]
-Omega_c = numpyro.sample('Omega_c', Uniform(0.1, 0.9))
-\end{lstlisting}
-%\end{minted}
-
-Then, we generate mock angular power spectra $C_\ell$ from the auto \& cross correlations of the Number Counts and Weak Lensing probes computed with the \texttt{gaussian\_cl\_covariance\_and\_mean} function in the \texttt{jc.angular\_cl} module. One reads
-%\begin{minted}[fontsize=\footnotesize]{python}
-\begin{lstlisting}[language=iPython]
-# Define the lensing and number counts probe
-probes = [jc.probes.WeakLensing(nzs_s_sys, 
-                       ia_bias=b_ia,
-                       multiplicative_bias=m),
-          jc.probes.NumberCounts(nzs_l, b)]
-cl, C = gaussian_cl_covariance_and_mean(cosmo, 
-                 ell, probes, 
-                 f_sky=0.25, sparse=True)
-\end{lstlisting}
-%\end{minted} 
-with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data (\texttt{cl\_obs}) yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
-%\begin{minted}[fontsize=\footnotesize]{python}
-\begin{lstlisting}[language=iPython]
-fiducial_model = condition(model,
-    {'Omega_c':0.2545, 'sigma8':0.801, 
-    'h':0.682, 'Omega_b':0.0485, 'w0':-1.,'n_s':0.971,
-     'A':0.5,'eta':0.,
-     'm1':0.0,'m2':0.0,'m3':0.0,'m4':0.0,
-     'dz1':0.0,'dz2':0.0,'dz3':0.0,'dz4':0.0,
-     'b1':1.2,'b2':1.4,'b3':1.6,'b4':1.8,'b5':2.0
-      })
-
-with seed(rng_seed=42):
-    cl_obs, P, C = fiducial_model()
-\end{lstlisting}
-%\end{minted}
-
-The \textit{inference model} looks very similar to the \textit{forward model} excepts that first we fix the angular power spectra covariance matrix $C$ (and its inverse $P$) and secondly we let \numpyro\ generates the model $C_{\ell}$ from the priors
-%\begin{minted}[fontsize=\footnotesize]{python}
-\begin{lstlisting}[language=iPython]
-cl = jc.angular_cl.angular_cl(cosmo, ell, 
-                              probes).flatten()
-return numpyro.sample('cl', MultivariateNormal(cl, 
-                            precision_matrix=P,
-                            covariance_matrix=C))
-\end{lstlisting}
-%\end{minted}
-
-These theoretical $C_{\ell}$ are in turn conditioned by the mock $C_\ell$ as followed
-%\begin{minted}[fontsize=\footnotesize]{python}
-\begin{lstlisting}[language=iPython]
-observed_model = condition(model, {'cl': data})
-\end{lstlisting}
-%\end{minted}
-Then, as an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as followed
-%\begin{minted}[fontsize=\footnotesize]{python}
-\begin{lstlisting}[language=iPython]
-nuts_kernel = numpyro.infer.NUTS(observed_model,
-              step_size=1e-1, 
-              init_strategy=numpyro.infer.init_to_median,
-              dense_mass=True,
-              max_tree_depth=7)
-
-mcmc = numpyro.infer.MCMC(nuts_kernel, 
-                          num_warmup=200, 
-                          num_samples=1000,
-                          num_chains=16,
-                          chain_method='vectorized',
-                          progress_bar=False)
-
-mcmc.run(jax.random.PRNGKey(42))
-\end{lstlisting}
-%\end{minted}
-More details can be found in the repository of this paper to perform a \numpyro\ modeling using \jaxcosmo : a structured NUTS sampling described in Section~\ref{sec-NUTS} \nblink{VectorizedNumPyro_block}, and a SVI optimisation followed by NUTS sampling of Section~\ref{sec-Neural-Reparametrisation} \nblink{DESY_Y1_SVI_and_NeutraReparam}. Notice however that the notebooks are only illustrative and for a real sample production the authors invite the reader to run their own script.
 
 \section{\JEC{SVI example with MVN guide}}
 \label{app-SVI_MVN}
