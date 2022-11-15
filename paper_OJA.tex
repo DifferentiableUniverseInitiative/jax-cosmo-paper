@@ -754,7 +754,7 @@ svi_result = svi.run(jax.random.PRNGKey(0),20_000, cl_obs)
 samples = guide.sample_posterior(jax.random.PRNGKey(1), svi_result.params, sample_shape=(100_000,))
 \end{lstlisting}
 %
-\JEC{Once the optimisation is done on gets $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a MultiVariate Normal distribution (MVN) and a Block Nueral Autoregressive Flow (B-NAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The reader can have a glance to the following notebook \nblink{DESY_Y1_SVI_and_NeutraReparam}. Concerning the B-NAF architecture it is composed of  a single flow using a block autoregressive structure with 2 hidden layers of 8 units each. The SVI optimization has been performed with the Adam optimizer \citep{2014arXiv1412.6980K} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 (30,000) steps to ensure a stable ELBO loss convergence when using the B-NAF (MVN) guides, and no tuning of the optimizer has been undertaken as for instance a learning rate scheduling. It takes about 2 or 3 hours on the NVidia V100 GPU scaling according to the number of steps}.  \FrL{Arf... 2 hours !} 
+\JEC{Once the optimisation is done on gets $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a MultiVariate Normal distribution (MVN) and a Block Nueral Autoregressive Flow (B-NAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The reader can have a glance to the following notebook \nblink{DES_Y1_SVI_and_NeutraReparam}. Concerning the B-NAF architecture it is composed of  a single flow using a block autoregressive structure with 2 hidden layers of 8 units each. The SVI optimization has been performed with the Adam optimizer \citep{2014arXiv1412.6980K} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 (30,000) steps to ensure a stable ELBO loss convergence when using the B-NAF (MVN) guides, and no tuning of the optimizer has been undertaken as for instance a learning rate scheduling. It takes about 2 or 3 hours on the NVidia V100 GPU scaling according to the number of steps}.  \FrL{Arf... 2 hours !} 
 
 \JEC{
 In the figure \ref{fig_cobaya_SVIs}, we compare the contours obtained with \texttt{Cobaya} as in figure \ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and B-NAF guided SVI.  As mentioned in \cite{NEURIPS2020_7cac11e2} one challenge with variational inference is assessing how close the variational approximation $q(z,\lambda^\ast)$ is to the true posterior distribution. It is not in the scope of this article to elaborate a statistical diagnostics, rather we show that both guided SVI exhibit rather similar contours and both estimate are close to the Cobaya posterior sampling. The difference is that these SVI approximate posteriors have been obtained in a short time and these posterior estimates can serve as front-end to a NUTS sampler as described in the next section.} 
@@ -780,7 +780,7 @@ which is evaluated with optimal $\lambda^\ast$ according to maximization of the 
 \caption{Same configuration as in Figure \ref{fig_cobaya_NUTS_SVI} but for the highly correlated five lens galaxy bias.}
 \label{fig_cobaya_NUTS_SVI_bis}
 \end{figure*}
-The \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as followed (See the notebook \nblink{DESY_Y1_SVI_and_NeutraReparam}):
+The \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as followed (See the notebook \nblink{DES_Y1_SVI_and_NeutraReparam}):
 \begin{lstlisting}[language=iPython]
 from numpyro.infer.reparam import NeuTraReparam
 # Reparametrisation of model to feed NUTS sampler
@@ -1029,7 +1029,7 @@ mcmc = numpyro.infer.MCMC(nuts_kernel,
 mcmc.run(jax.random.PRNGKey(42))
 \end{lstlisting}
 %\end{minted}
-More details can be found in the repository of this paper to perform a \numpyro\ modeling using \jaxcosmo : a structured NUTS sampling described in Section~\ref{sec-NUTS} \nblink{VectorizedNumPyro_block}, and a SVI optimisation followed by NUTS sampling of Section~\ref{sec-Neural-Reparametrisation} \nblink{DESY_Y1_shear_cluster_ModelReparam_SVI-MVN_Neutra_NUTS}. Notice however that the notebooks are only illustrative and for a real sample production the authors invite the reader to run their own script.
+More details can be found in the repository of this paper to perform a \numpyro\ modeling using \jaxcosmo : a structured NUTS sampling described in Section~\ref{sec-NUTS} \nblink{VectorizedNumPyro_block}, and a SVI optimisation followed by NUTS sampling of Section~\ref{sec-Neural-Reparametrisation} \nblink{DESY_Y1_SVI_and_NeutraReparam}. Notice however that the notebooks are only illustrative and for a real sample production the authors invite the reader to run their own script.
 
 \section{\JEC{SVI example with MVN guide}}
 \label{app-SVI_MVN}
