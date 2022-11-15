@@ -1,3 +1,164 @@
+@article{Parno2018,
+author = {Parno, Matthew D. and Marzouk, Youssef M.},
+title = {Transport Map Accelerated Markov Chain Monte Carlo},
+journal = {SIAM/ASA Journal on Uncertainty Quantification},
+volume = {6},
+number = {2},
+pages = {645-682},
+year = {2018},
+doi = {10.1137/17M1134640},
+URL = {https://doi.org/10.1137/17M1134640},
+eprint = {https://doi.org/10.1137/17M1134640}
+}
+
+
+
+
+@article{Owen2017,
+author = {Art B. Owen},
+title = {Statistically Efficient Thinning of a Markov Chain Sampler},
+journal = {Journal of Computational and Graphical Statistics},
+volume = {26},
+number = {3},
+pages = {738-744},
+year  = {2017},
+publisher = {Taylor & Francis},
+doi = {10.1080/10618600.2017.1336446},
+URL = {https://doi.org/10.1080/10618600.2017.1336446},
+eprint = {https://doi.org/10.1080/10618600.2017.1336446}
+}
+
+
+@article{Margossian2019,
+author = {Margossian, Charles C.},
+title = {A review of automatic differentiation and its efficient implementation},
+journal = {WIREs Data Mining and Knowledge Discovery},
+volume = {9},
+number = {4},
+pages = {e1305},
+keywords = {automatic differentiation, computational statistics, numerical methods},
+doi = {https://doi.org/10.1002/widm.1305},
+url = {https://wires.onlinelibrary.wiley.com/doi/abs/10.1002/widm.1305},
+eprint = {https://wires.onlinelibrary.wiley.com/doi/pdf/10.1002/widm.1305},
+abstract = {Derivatives play a critical role in computational statistics, examples being Bayesian inference using Hamiltonian Monte Carlo sampling and the training of neural networks. Automatic differentiation (AD) is a powerful tool to automate the calculation of derivatives and is preferable to more traditional methods, especially when differentiating complex algorithms and mathematical functions. The implementation of AD, however, requires some care to insure efficiency. Modern differentiation packages deploy a broad range of computational techniques to improve applicability, run time, and memory management. Among these techniques are operation overloading, region-based memory, and expression templates. There also exist several mathematical techniques which can yield high performance gains when applied to complex algorithms. For example, semi-analytical derivatives can reduce by orders of magnitude the runtime required to numerically solve and differentiate an algebraic equation. Open and practical problems include the extension of current packages to provide more specialized routines, and finding optimal methods to perform higher-order differentiation. This article is categorized under: Algorithmic Development > Scalable Statistical Methods},
+year = {2019}
+}
+
+
+
+
+@inproceedings{10.5555/2969239.2969303,
+author = {Kucukelbir, Alp and Ranganath, Rajesh and Gelman, Andrew and Blei, David M.},
+title = {Automatic Variational Inference in Stan},
+year = {2015},
+publisher = {MIT Press},
+address = {Cambridge, MA, USA},
+abstract = {Variational inference is a scalable technique for approximate Bayesian inference. Deriving variational inference algorithms requires tedious model-specific calculations; this makes it difficult for non-experts to use. We propose an automatic variational inference algorithm, automatic differentiation variational inference (ADVI); we implement it in Stan (code available), a probabilistic programming system. In ADVI the user provides a Bayesian model and a dataset, nothing else. We make no conjugacy assumptions and support a broad class of models. The algorithm automatically determines an appropriate variational family and optimizes the variational objective. We compare ADVI to MCMC sampling across hierarchical generalized linear models, nonconjugate matrix factorization, and a mixture model. We train the mixture model on a quarter million images. With ADVI we can use variational inference on any model we write in Stan.},
+booktitle = {Proceedings of the 28th International Conference on Neural Information Processing Systems - Volume 1},
+pages = {568–576},
+numpages = {9},
+location = {Montreal, Canada},
+series = {NIPS'15}
+}
+
+@article{10.5555/3122009.3122023,
+author = {Kucukelbir, Alp and Tran, Dustin and Ranganath, Rajesh and Gelman, Andrew and Blei, David M.},
+title = {Automatic Differentiation Variational Inference},
+year = {2017},
+issue_date = {January 2017},
+publisher = {JMLR.org},
+volume = {18},
+number = {1},
+issn = {1532-4435},
+abstract = {Probabilistic modeling is iterative. A scientist posits a simple model, fits it to her data, refines it according to her analysis, and repeats. However, fitting complex models to large data is a bottleneck in this process. Deriving algorithms for new models can be both mathematically and computationally challenging, which makes it difficult to efficiently cycle through the steps. To this end, we develop automatic differentiation variational inference (ADVI). Using our method, the scientist only provides a probabilistic model and a dataset, nothing else. ADVI automatically derives an efficient variational inference algorithm, freeing the scientist to refine and explore many models. ADVI supports a broad class of models--no conjugacy assumptions are required. We study ADVI across ten modern probabilistic models and apply it to a dataset with millions of observations. We deploy ADVI as part of Stan, a probabilistic programming system.},
+journal = {J. Mach. Learn. Res.},
+month = {jan},
+pages = {430–474},
+numpages = {45},
+keywords = {approximate inference, probabilistic programming, Bayesian inference}
+}
+
+
+@inproceedings{KingmaB14,
+  author    = {Diederik P. Kingma and
+               Jimmy Ba},
+  editor    = {Yoshua Bengio and
+               Yann LeCun},
+  title     = {Adam: {A} Method for Stochastic Optimization},
+  booktitle = {3rd International Conference on Learning Representations, {ICLR} 2015,
+               San Diego, CA, USA, May 7-9, 2015, Conference Track Proceedings},
+  year      = {2015},
+  url       = {http://arxiv.org/abs/1412.6980},
+  timestamp = {Thu, 25 Jul 2019 14:25:37 +0200},
+  biburl    = {https://dblp.org/rec/journals/corr/KingmaB14.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+
+
+@article{10.5555/2627435.2638586,
+author = {Homan, Matthew D. and Gelman, Andrew},
+title = {The No-U-Turn Sampler: Adaptively Setting Path Lengths in Hamiltonian Monte Carlo},
+year = {2014},
+issue_date = {January 2014},
+publisher = {JMLR.org},
+volume = {15},
+number = {1},
+issn = {1532-4435},
+abstract = {Hamiltonian Monte Carlo (HMC) is a Markov chain Monte Carlo (MCMC) algorithm that avoids the random walk behavior and sensitivity to correlated parameters that plague many MCMC methods by taking a series of steps informed by first-order gradient information. These features allow it to converge to high-dimensional target distributions much more quickly than simpler methods such as random walk Metropolis or Gibbs sampling. However, HMC's performance is highly sensitive to two user-specified parameters: a step size ε and a desired number of steps L. In particular, if L is too small then the algorithm exhibits undesirable random walk behavior, while if L is too large the algorithm wastes computation. We introduce the No-U-Turn Sampler (NUTS), an extension to HMC that eliminates the need to set a number of steps L. NUTS uses a recursive algorithm to build a set of likely candidate points that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. Empirically, NUTS performs at least as efficiently as (and sometimes more effciently than) a well tuned standard HMC method, without requiring user intervention or costly tuning runs. We also derive a method for adapting the step size parameter ε on the fly based on primal-dual averaging. NUTS can thus be used with no hand-tuning at all, making it suitable for applications such as BUGS-style automatic inference engines that require efficient "turnkey" samplers.},
+journal = {J. Mach. Learn. Res.},
+month = {jan},
+pages = {1593–1623},
+numpages = {31},
+keywords = {Bayesian inference, dual averaging, adaptive Monte Carlo, Hamiltonian Monte Carlo, Markov chain Monte Carlo}
+}
+
+
+@article{10.5555/2567709.2502622,
+author = {Hoffman, Matthew D. and Blei, David M. and Wang, Chong and Paisley, John},
+title = {Stochastic Variational Inference},
+year = {2013},
+issue_date = {January 2013},
+publisher = {JMLR.org},
+volume = {14},
+number = {1},
+issn = {1532-4435},
+abstract = {We develop stochastic variational inference, a scalable algorithm for approximating posterior distributions. We develop this technique for a large class of probabilistic models and we demonstrate it with two probabilistic topic models, latent Dirichlet allocation and the hierarchical Dirichlet process topic model. Using stochastic variational inference, we analyze several large collections of documents: 300K articles from Nature, 1.8M articles from The New York Times, and 3.8M articles from Wikipedia. Stochastic inference can easily handle data sets of this size and outperforms traditional variational inference, which can only handle a smaller subset. (We also show that the Bayesian nonparametric topic model outperforms its parametric counterpart.) Stochastic variational inference lets us apply complex Bayesian models to massive data sets.},
+journal = {J. Mach. Learn. Res.},
+month = {may},
+pages = {1303–1347},
+numpages = {45},
+keywords = {Bayesian nonparametrics, topic models, stochastic optimization, variational inference, Bayesian inference}
+}
+
+
+@article{10.5555/3122009.3242010,
+author = {Baydin, At\i{}l\i{}m G\"{u}nes and Pearlmutter, Barak A. and Radul, Alexey Andreyevich and Siskind, Jeffrey Mark},
+title = {Automatic Differentiation in Machine Learning: A Survey},
+year = {2017},
+issue_date = {January 2017},
+publisher = {JMLR.org},
+volume = {18},
+number = {1},
+issn = {1532-4435},
+abstract = {Derivatives, mostly in the form of gradients and Hessians, are ubiquitous in machine learning. Automatic differentiation (AD), also called algorithmic differentiation or simply "auto-diff", is a family of techniques similar to but more general than backpropagation for efficiently and accurately evaluating derivatives of numeric functions expressed as computer programs. AD is a small but established field with applications in areas including computational uid dynamics, atmospheric sciences, and engineering design optimization. Until very recently, the fields of machine learning and AD have largely been unaware of each other and, in some cases, have independently discovered each other's results. Despite its relevance, general-purpose AD has been missing from the machine learning toolbox, a situation slowly changing with its ongoing adoption under the names "dynamic computational graphs" and "differentiable programming". We survey the intersection of AD and machine learning, cover applications where AD has direct relevance, and address the main implementation techniques. By precisely defining the main differentiation techniques and their interrelationships, we aim to bring clarity to the usage of the terms "autodiff", "automatic differentiation", and "symbolic differentiation" as these are encountered more and more in machine learning settings.},
+journal = {J. Mach. Learn. Res.},
+month = {jan},
+pages = {5595–5637},
+numpages = {43},
+keywords = {differentiable programming, backpropagation}
+}
+
+@ARTICLE{8588399,
+  author={Zhang, Cheng and Bütepage, Judith and Kjellström, Hedvig and Mandt, Stephan},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, 
+  title={Advances in Variational Inference}, 
+  year={2019},
+  volume={41},
+  number={8},
+  pages={2008-2026},
+  doi={10.1109/TPAMI.2018.2889774}
+  }
 
 @ARTICLE{2019A&A...625A..64J,
        author = {{Jasche}, J. and {Lavaux}, G.},
