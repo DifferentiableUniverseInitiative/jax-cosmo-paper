@@ -19,10 +19,10 @@
 \usepackage{lineno}
 \usepackage{fontawesome}
 
-
-\usepackage[
-singlelinecheck=false % <-- important
-]{caption}
+% jZ had to remove this to avoid clash
+% \usepackage[
+% singlelinecheck=false % <-- important
+% ]{caption}
 
 
 %to cross out a sentence: \st{Hello World}
@@ -813,7 +813,7 @@ mcmc.run(jax.random.PRNGKey(42))
 \end{lstlisting}
 
 The NUTS sampler have been running with 16 chains of 1,000 samples each after a warm-up phase consisting of 200 samples, and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). \FrL{it should explain that vectorized means 16 chains in parallel on a single GPU.}
-\JEC{The "vectorized" option runs multi chains in a single GPU thanks to the \jax \textit{vmap} mechanism. If one dispose of several GPUs then the "parallel" option using \textit{pmap}  mechanism runs one chain per GPU. As noted in \numpyro\ MCMC documentation, it is possible to mix parallel and vectorized sampling\footnote{Since version 0.9.0.}.}
+\JEC{The "vectorized" option runs multi chains in a single GPU thanks to the JAX \textit{vmap} mechanism. If one dispose of several GPUs then the "parallel" option using \textit{pmap}  mechanism runs one chain per GPU. As noted in \numpyro\ MCMC documentation, it is possible to mix parallel and vectorized sampling\footnote{Since version 0.9.0.}.}
 
 The experiments have been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or an NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapse time for these experiments was 20 hours.
 
@@ -986,7 +986,7 @@ A second approach is to develop emulators of a full-fledged Boltzmann code. Emul
 \bigskip
 
 % Reasoning behind not making a full emulator of the correlation functions
-Connected to this discussion about emulators, one point that could be discussed is whether one even needs a library like \jaxcosmo\ if anyway one can build emulators of a CCL likelihood for use inside gradient-based inference algorithms. While this could indeed be feasible, and of similar cost as just making an emulator of the matter power spectrum, the drawback of this approach is that many analysis parameters and choices become hardcoded in the emulator. While the model for the linear matter power spectrum is typically kept fixed in practical analyses, all the of the choices related in particular to systematics modeling (e.g. photometric redshift errors, galaxy bias, or intrinsic galaxy alignments) are very likely to vary significantly in the process of developing the analysis. Building an emulator for the likelihood would mean the emulator needs to be retrained everytime the likelihood is changed.
+Connected to this discussion about emulators, one point that could be discussed is whether one even needs a library like \jaxcosmo\ if anyway one can build emulators of a CCL likelihood for use inside gradient-based inference algorithms. While this could indeed be feasible, and of similar cost as just making an emulator of the matter power spectrum, the drawback of this approach is that many analysis parameters and choices become hard coded in the emulator. While the model for the linear matter power spectrum is typically kept fixed in practical analyses, all the of the choices related in particular to systematics modeling (e.g. photometric redshift errors, galaxy bias, or intrinsic galaxy alignments) are very likely to vary significantly in the process of developing the analysis. Building an emulator for the likelihood would mean the emulator needs to be retrained everytime the likelihood is changed.
 
 \bigskip
 
