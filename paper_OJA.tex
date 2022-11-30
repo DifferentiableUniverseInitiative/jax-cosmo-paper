@@ -253,7 +253,8 @@ The aim of this session is to provide a brief technical primer on JAX, necessary
 
 \paragraph{Automatic Differentiation} Traditionally, two different approaches have been used in cosmology to obtain derivatives of given numerical expressions.
 
-The first approach is to derive analytically the formula for the derivatives of interest \citep{2019A&A...625A..64J} \JEC{This reference should be validated by F.L}, with or without the help of tools such as \texttt{Mathematica}\footnote{\url{https://www.wolfram.com/mathematica}.}. This is however only practical typically for simple analytical models.
+The first approach is to derive analytically the formula for the derivatives of interest \citep{2019A&A...625A..64J}%JEC: This reference should be validated by F.L
+, with or without the help of tools such as \texttt{Mathematica}\footnote{\url{https://www.wolfram.com/mathematica}.}. This is however only practical typically for simple analytical models.
 
 The second approach is to compute numerical derivatives by finite differences. This approach can be applied on black-box models of abitrary complexity (from Boltzmann codes \FrL{some citations} to cosmological simulations \FrL{some citations}). However it is notoriously difficult to obtain stable derivatives by finite differences \FrL{cite papers trying to do fisher}. In addition, their computational cost does not scale well with the number of parameters (a minimum of $(2N+1)$ model evaluations is typically required for $N$ parameters), making them completely impractical whenever derivatives are needed on the fly.\FrL{this last sentence is not great.}
 
@@ -302,7 +303,7 @@ def f(x):
 batched_f = jax.vmap(f)
 # batched_f now applies to 1D arrays
 \end{lstlisting}
-Again, we stress that in this example, \texttt{batched\_f} will not be implemented in terms of a for loop, but with operations over vectors. The function above is trivial, but the same approach can be used to parallelize any function, from Limber integrals, to an entire likelihood. \JEC{Considering the case of multi devices (eg. GPU or TPU), JAX provides \texttt{pmap} which compile and execute in parallel replicates of the same code on each device, and recent experimental developments deal with parallelization of function over supercomputer-scale hardware meshes. In the examples detailed in this article, we have only relied on \texttt{vmap} functionality.}
+Again, we stress that in this example, \texttt{batched\_f} will not be implemented in terms of a for loop, but with operations over vectors. The function above is trivial, but the same approach can be used to parallelize any function, from Limber integrals, to an entire likelihood. When considering multi-devices use-case (eg. GPU or TPU), JAX provides \texttt{pmap} which compile and execute in parallel replicates of the same code on each device. Moreover, recent experimental developments deal with parallelization of function over supercomputer-scale hardware meshes. Notice that in the examples detailed in this article, we have only relied on \texttt{vmap} functionality.
 
 \textbf{Why is that interesting?} Automatic Vectorization makes it possible to trivially parallelize cosmological likelihood evaluations, to run many parallel MCMC chains on a single GPU.
 
@@ -546,7 +547,8 @@ The algorithm is similar to the Gram-Schmidt process, using the constant covaria
 These numbers are uncorrelated and of unit variance and this construction ensures that the log-likelihood of $(y_i)_{i\leq M}$  $(\theta_i)_{i\leq M}$, $y_i$ is identical to that of $x$ up to second order, meaning that the Fisher matrices derived from the two parameters should be identical, and in general the $y$ values should lose very little information compared to the full likelihood.
 
 In problems where a (constant) covariance matrix is estimated from simulations, the number of such simulations required for a given accuracy typically scales with the number of data points used. 
-MOPED therefore greatly reduces this number, often by a factor of hundreds. Since the uncertainty in the covariance due to a finite number of simulations must be accounted for \citep{2018MNRAS.473.2355S,2007A&A...464..399H}, this reduction can also offset any loss of information from the compression. \FrL{hummm but we still do need a full covariance in the compression algorithm, right?} \FrL{And we still do need to invert it... is the idea rather that if we dont have a perfect matrix at that stage the worse that can happen is sub optimal compression?}\JEC{Well there are several ways that $C$ can be questioned: parameter dependence (ie. fiducial model/true model), non-gaussianities, errors... So not sure that all these effects induce only sub-optimal compression. But it may be out of the scope of this paragraph/paper.}
+MOPED therefore greatly reduces this number, often by a factor of hundreds. Since the uncertainty in the covariance due to a finite number of simulations must be accounted for \citep{2018MNRAS.473.2355S,2007A&A...464..399H}, this reduction can also offset any loss of information from the compression. \FrL{hummm but we still do need a full covariance in the compression algorithm, right?} \FrL{And we still do need to invert it... is the idea rather that if we dont have a perfect matrix at that stage the worse that can happen is sub optimal compression?}
+%JEC{Well there are several ways that $C$ can be questioned: parameter dependence (ie. fiducial model/true model), non-gaussianities, errors... So not sure that all these effects induce only sub-optimal compression. But it may be out of the scope of this paragraph/paper.}
 
 Another key advantage of the MOPED algorithm is to eliminate the need of large covariance matrix inversion of size $N\times N$ requiring $O(N^3)$ operations. This inversion takes place not only for the Fisher matrix computation (Eq.~\ref{eq:fisher_way2}, but more importantly in the log-likelihood computation (see the snippet of the previous section). The MOPED algorithm reduces the complexity to $O(M)$ operations.
 
@@ -594,9 +596,7 @@ In the following sections we review some statistical methods which directly bene
 
 \subsection{Description of the DES-Y1 exercise}
 \label{sec-DESY1}
-\JEC{Transfer of the model context from apprndix to here to ease the reading.}
-
-
+%JEC{Transfer of the model context from appendix here to ease the reading.}
 From the DES server\footnote{\url{http://desdr-server.ncsa.illinois.edu/despublic/y1a1_files/chains/2pt_NG_mcal_1110.fit}} we have extracted the $N(z)$ distributions of the sources and normalize them to $[1.47, 1.46, 1.50, 0.73]$ effective number of sources per $\mathrm{arcmin}^2$ for each of the four redshift bins, respectively. The lens distributions $N(z)$ for five redshift bins are also extracted. The corresponding shapes of the different distributions are performed thanks to \texttt{jc.redshift.kde\_nz} function (``\texttt{jc}'' hereafter stands for \texttt{jax\_cosmo}) and are presented in Figure \ref{fig-DESY1-src-lens-redshift}.
 \begin{figure}
 \centering
@@ -734,13 +734,13 @@ At each sample, a trajectory is initialized with a random momentum $p$, and then
 \frac{\mathrm{d}p}{\mathrm{d}t} &= - \frac{\partial V}{\mathrm{d} q} = \frac{\partial \log{\cal P}}{\mathrm{d} q} \\
 \frac{\mathrm{d}q}{\mathrm{d}t} &= + \frac{\partial U}{\mathrm{d} p} = M^{-1} p
 \end{align}
-where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also used to set the scale of the random initial velocities. \JEC{These differential equations may be integrated iterating over $L$ steps the following \textit{leapfrog} algorithm
+where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also used to set the scale of the random initial velocities. These differential equations may be integrated iterating over $L$ steps the following \textit{leapfrog} algorithm
 \begin{align}
     p_{n+\frac{1}{2}} &= p_n -\frac{\varepsilon}{2} \frac{\partial V}{\mathrm{d} q}(q_n) \\
     q_{n+1} & = q_n +\varepsilon M^{-1} p_{n+\frac{1}{2}} \\
     p_{n+1} &=  p_{n+\frac{1}{2}} -\frac{\varepsilon}{2} \frac{\partial V}{\mathrm{d} q}(q_{n+1})
 \end{align}
-where $\varepsilon$ is a step size parameter.}
+where $\varepsilon$ is a step size parameter.
 
 Formally, the set of $n_\mathrm{dim}$ moment are treated as new parameters, and after 
 some number of integration steps a final point in the trajectory is compared to the initial one,
@@ -750,10 +750,10 @@ a relaxation to the integration accuracy.
 That gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing,
 but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluations per point, greatly slowing it
 in high dimension, and as with the Fisher forecasting is highly prone to numerical error. Automatically
-calculating a Hessian, as in \jaxcosmo, makes it feasible and efficient. \FrL{I don't think it uses a Hesssian? you only need the derivative of the log posterior wrt parameters. The hessian would be needed to get a good estimate of M.}\JEC{Yes. Why the Hessian?}
+calculating a Hessian, as in \jaxcosmo, makes it feasible and efficient. \FrL{I don't think it uses a Hesssian? you only need the derivative of the log posterior wrt parameters. The hessian would be needed to get a good estimate of M.}
 
 \FrL{Needs a little paragraph to explain with HMC is supposed to be better than plain Metropolis-Hastings.}
-\JEC{Metropolis-Hastings suffers from random walk to explore the geometry of the target distribution to get the region of maximum probability (ie. typical set) which is particularly  penalising in large dimensions. The HMC dynamics allow to make large jumps to explore the region around a sample to guess the next good one.}
+Metropolis-Hastings suffers from random walk to explore the geometry of the target distribution to get the region of maximum probability (ie. typical set) which is particularly  penalising in large dimensions. The HMC dynamics allow to make large jumps to explore the region around a sample to guess the next good one.
 
 The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the number of steps as well as the step size of integration. The next section addresses this problem thanks to the No-U-Turn HMC version.
 
@@ -792,15 +792,15 @@ The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the
 % Show the advantage of using NUTS 
 % look at difference in efficiency in terms of how many times we need to call the model.
 
-The No-U-Turn (\textit{NUTS})  variant of the traditional HMC sampler has been introduced in \citet{10.5555/2627435.2638586}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. \FrL{\st{Parameters L an epsilon should be introduced at the level of HMC then.}}\JEC{done} So, in an automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls at each generation.
+The No-U-Turn (\textit{NUTS})  variant of the traditional HMC sampler has been introduced in \citet{10.5555/2627435.2638586}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. So, in an automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls at each generation.
 
-Both sampler HMC and NUTS are available in the \numpyro\ library: \texttt{NUTS} is inherited from \texttt{HMC} which in turns is inherited from the generic \texttt{MCMC} class. \FrL{class inheritance is TMI.}  After the forward model creation for the DES-Y1 3x2pts exercise described in section \ref{sec-DESY1} \FrL{We should introduce the model at the beginning of this section.}\JEC{Done}
-\begin{itemize}
-    \item \st{a reparametrisation of the latent variable uniform priors to use a unified uniform prior $\mathcal{U}[-5,5]$} \JEC{we have first applyied  an affine transformation on cosmological, intrinsic alignment and biais parameters to use an unique uniform prior $\mathcal{U}[-5,5]$ (Table~\ref{tab-DESY1})}; \FrL{these are not latent variables, but model parameters. Also people don't know what this reparametrisation means.}
-    \item  \FrL{People don't know what the warmup phase is...}\JEC{we use a structured mass matrix consisting on essentially a diagonal form  with a block structure for the following sets of parameters} $(\Omega_b,\Omega_c,\sigma_8,w_0,h)$ and $(b_i)_{i:1\dots5}$. This matrix structuring is motivated by the expected degree of correlation of the concerned parameters as can be shown for instance in Figure \ref{fig_cobaya_NUTS_SVI_bis}.
+Both sampler HMC and NUTS are available in the \numpyro\ library. After the forward model creation for the DES-Y1 3x2pts exercise described in section \ref{sec-DESY1}: \begin{itemize}
+    \item we have first applyied  an affine transformation on cosmological, intrinsic alignment and biais parameters to use an unique uniform prior $\mathcal{U}[-5,5]$ (Table~\ref{tab-DESY1}); %\FrL{these are not latent variables, but model parameters. Also people don't know what this reparametrisation means.}
+    \item  %\FrL{People don't know what the warmup phase is...}
+    we use a structured mass matrix consisting on essentially a diagonal form  with a block structure for the following sets of parameters $(\Omega_b,\Omega_c,\sigma_8,w_0,h)$ and $(b_i)_{i:1\dots5}$. This matrix structuring is motivated by the expected degree of correlation of the concerned parameters as can be shown for instance in Figure \ref{fig_cobaya_NUTS_SVI_bis}.
 \end{itemize}
 
-\JEC{As an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as followed with \numpyro:}
+As an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as followed with \numpyro:
 \begin{lstlisting}[language=iPython]
 %nuts_kernel = numpyro.infer.NUTS(observed_model,
               step_size=1e-1,
@@ -818,10 +818,8 @@ mcmc = numpyro.infer.MCMC(nuts_kernel,
 mcmc.run(jax.random.PRNGKey(42))
 \end{lstlisting}
 
-The NUTS sampler have been running with 16 chains of 1,000 samples each after a warm-up phase consisting of 200 samples, and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). \FrL{it should explain that vectorized means 16 chains in parallel on a single GPU.}
-\JEC{The "vectorized" option runs multi chains in a single GPU thanks to the JAX \textit{vmap} mechanism. If one dispose of several GPU devices, then the using the JAX paralellization mechanism (\textit{pmap}), it is possible to launch on each GPU device the "vectorized" sampling as done in the previous snippet, and get back all the MCMC chains.}
-
-Although, experiments have been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or an NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapse time for these experiments was 20 hours.
+The NUTS sampler have been running with 16 chains of 1,000 samples each after a warm-up phase consisting of 200 samples, and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). %\FrL{it should explain that vectorized means 16 chains in parallel on a single GPU.}
+The "vectorized" option runs multi chains in a single GPU thanks to the JAX \textit{vmap} mechanism. If one dispose of several GPU devices, then the using the JAX paralellization mechanism (\textit{pmap}), it is possible to launch on each GPU device the "vectorized" sampling as done in the previous snippet, and get back all the MCMC chains. However, experiments have been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or an NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapse time for these experiments was 20 hours.
 
 The results in terms of relative effective sample sizes (aka ``ESS'') are detailed in Table~\ref{tab-ESS-NUTS_SVI-1} while the confidential level (CL) contours are presented in Figure \ref{fig_cobaya_NUTS_SVI}. One notices the dramatic improvement of the ESS by about a factor 10 using the NUTS sampler compared to the highly-optimized \texttt{Cobaya} Metropolis-Hastings implementation \citep{2019ascl.soft10019T,2021JCAP...05..057T} which has last about 40 hours on CPU to generate 70,000 samples. The CL contours are also in very good agreement. \FrL{we should rephrase this a bit to say that Cobaya is our reference.} It is worth to point out that the mass matrix structuring operation is a very effective as it increases the sampling efficiency by about a factor 2.   Anticipating the Section~\ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective solution to validate the model with fewer samples, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Table~\ref{tab-ESS-NUTS_SVI-1}), then the user is highly encouraged to tune this critical parameter. 
 %
@@ -865,7 +863,6 @@ with
 p(\xi,\mathcal{D}) \bydef p(T^{-1}(\xi),\mathcal{D}) |J_{T^{-1}}(\xi)|
 \end{equation}
 which exhibit the Jacobian of the $T^{-1}$ transformation.
-\JEC{
 The evaluation of the expectations during gradient descent of the loss Eq.~\ref{eq-loss-svi-2} can be done using what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \cite{10.5555/2969239.2969303}).  Let us illustrated the method using an invertible transformation (aka \textit{normalizing flow})  $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, such that $\zeta\sim \mathcal{N}(0,I)$\footnote{Notice that $z=T^{-1}(\xi)=(T^{-1} \circ S_\lambda^{-1})(\zeta)=(S_\lambda \circ T)^{-1}(\zeta)=F_\lambda(\zeta)$.}. The Jacobian of this distribution is 1 by definition (volume conservation), so the lost function reads
 \begin{multline}
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
@@ -883,10 +880,9 @@ to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the
 \label{eq-loss-svi-4}
 \end{multline}
 An concrete example of the gradient formula is given in Appendix \ref{app-SVI_MVN} with the multivariate Gaussian distribution family used as the guide.
-}%JEC
 %
-\FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
-\FrL{we don't have plots of just the VI?}\JEC{Good point: I have SVI alone with both MVN or Block Neural Autoregressive Flow. The contours are narrower which would require to elaborate...}
+%\FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
+%\FrL{we don't have plots of just the VI?}\JEC{Good point: I have SVI alone with both MVN or Block Neural Autoregressive Flow. See new figure.}
 
 Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{sec-DESY1}) where the \texttt{model} is described and the \texttt{cl\_obs} are the observed $C_\ell$.}
 \begin{lstlisting}[language=iPython]
@@ -904,10 +900,9 @@ svi_result = svi.run(jax.random.PRNGKey(0),20_000, cl_obs)
 samples = guide.sample_posterior(jax.random.PRNGKey(1), svi_result.params, sample_shape=(100_000,))
 \end{lstlisting}
 %
-\JEC{Once the optimisation is done on gets $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a MultiVariate Normal distribution (MVN) and a Block Nueral Autoregressive Flow (B-NAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The reader can have a glance to the following notebook \nblink{DES_Y1_SVI_and_NeutraReparam}. Concerning the B-NAF architecture it is composed of  a single flow using a block autoregressive structure with 2 hidden layers of 8 units each. The SVI optimization has been performed with the Adam optimizer \citep{KingmaB14} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 (30,000) steps to ensure a stable ELBO loss convergence when using the B-NAF (MVN) guides, and no tuning of the optimizer has been undertaken as for instance a learning rate scheduling. It takes about 2 or 3 hours on the NVidia V100 GPU scaling according to the number of steps}.  \FrL{Arf... 2 hours !} 
+Once the optimisation is done on gets $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a MultiVariate Normal distribution (MVN) and a Block Nueral Autoregressive Flow (B-NAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The reader can have a glance to the following notebook \nblink{DES_Y1_SVI_and_NeutraReparam}. Concerning the B-NAF architecture it is composed of  a single flow using a block autoregressive structure with 2 hidden layers of 8 units each. The SVI optimization has been performed with the Adam optimizer \citep{KingmaB14} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 (30,000) steps to ensure a stable ELBO loss convergence when using the B-NAF (MVN) guides, and no tuning of the optimizer has been undertaken as for instance a learning rate scheduling. It takes about 2 or 3 hours on the NVidia V100 GPU scaling according to the number of steps.  \FrL{Arf... 2 hours !} 
 
-\JEC{
-In the figure \ref{fig_cobaya_SVIs}, we compare the contours obtained with \texttt{Cobaya} as in figure \ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and B-NAF guided SVI.  As mentioned in \cite{NEURIPS2020_7cac11e2} one challenge with variational inference is assessing how close the variational approximation $q(z,\lambda^\ast)$ is to the true posterior distribution. It is not in the scope of this article to elaborate a statistical diagnostics, rather we show that both guided SVI exhibit rather similar contours and both estimate are close to the Cobaya posterior sampling. The difference is that these SVI approximate posteriors have been obtained in a short time and these posterior estimates can serve as front-end to a NUTS sampler as described in the next section.} 
+In the figure \ref{fig_cobaya_SVIs}, we compare the contours obtained with \texttt{Cobaya} as in figure \ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and B-NAF guided SVI.  As mentioned in \cite{NEURIPS2020_7cac11e2} one challenge with variational inference is assessing how close the variational approximation $q(z,\lambda^\ast)$ is to the true posterior distribution. It is not in the scope of this article to elaborate a statistical diagnostics, rather we show that both guided SVI exhibit rather similar contours and both estimate are close to the Cobaya posterior sampling. The difference is that these SVI approximate posteriors have been obtained in a short time and these posterior estimates can serve as front-end to a NUTS sampler as described in the next section. 
 %
 \begin{figure*}
 \centering
@@ -942,7 +937,7 @@ We have used the MVN guided SVI described in the previous section. The NUTS samp
 
 Results in terms of sampling efficiency are shown on Table~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to ease the model development in its early phase.
 %
-\subsection{\JEC{Sampling efficiency}}
+\subsection{Sampling efficiency}
 \label{sec-results}
 %
 To a large extend looking at results of Table~\ref{tab-ESS-NUTS_SVI-1}, the key question is: what is the HMC/NUTS gain compared to the well known highly optimized \texttt{Cobaya} sampler? 
@@ -1031,7 +1026,7 @@ The next extensions of this framework will be the inclusion of additional cosmol
 
 In the spirit of reproducible research, all results presented in this paper can be reproduced from the following GitHub repository:
 
-\FrL{add link}\JEC{Verif if all the nb listed are there, and if some have to be withdrawn. } 
+%\FrL{add link}\JEC{Verif if all the nb listed are there, and if some have to be withdrawn. } 
 
 \url{https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper/}
 
@@ -1066,7 +1061,7 @@ Some of the numerical experiments have been conducted at the IN2P3 Computing Cen
 
 
 
-\section{\JEC{SVI example with MVN guide}}
+\section{SVI example with MVN guide}
 \label{app-SVI_MVN}
 Let us illustrate the \textit{elliptical standardisation} described in section \label{ec-SVI} in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
 \begin{multline}
