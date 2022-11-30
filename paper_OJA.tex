@@ -1068,18 +1068,10 @@ Let us illustrate the \textit{elliptical standardisation} described in section \
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
 \label{eq-loss-svi-3b}
 \end{multline}
-where $\mathbb{H}(q)$ is the Shannon entropy of the MVN distribution which is independent of the model, so its gradient can be computed once for all and reused in any user model.  
-For the use case of the MVN (auto)guide, one gets
-\begin{align}
--\nabla_\mu \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
-\nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)] \right. \nn \\
-& \left. \qquad \qquad \qquad \qquad \qquad \qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right\} \nn \\
--\nabla_L \mathcal{L} &= \mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left\{
-\left[ \nabla_z \log p(z,\mathcal{D}) \times \nabla_\xi[T^{-1}(\xi)] \right.\right. \nn\\
-&\left. \left. \qquad\qquad\qquad + \nabla_\xi \log|J_{T^{-1}}(\xi)| \right] \times \xi^T 
-\right\}+ (L^{-1})^T
-\end{align}
-\FrL{Yeah. this is way TMI, and also goes against the idea that with autodiff we don't need to manually work out all these details.} The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX.
+where $\mathbb{H}(q)$ is the Shannon entropy of the $q$ distribution which is independent of the model, so its gradient can be computed once for all and reused in any user model. In case of the MVN for completeness  $\nabla_\mu \mathbb{H}(q)=0$, $\nabla_L \mathbb{H}(q)=(L^{-1})^T$ while the other gradients are computed by the JAX \texttt{autodiff} mechanism.
+%\FrL{Yeah. this is way TMI, and also goes against the idea that with autodiff we don't need to manually work out all these details.} 
+
+The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX.
 %% If you have bibdatabase file and want bibtex to generate the
 %% bibitems, please use
 %%
