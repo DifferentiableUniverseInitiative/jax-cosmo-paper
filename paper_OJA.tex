@@ -428,11 +428,12 @@ These numerical differences are mostly due to different choices of integration m
 \end{figure}
 
 
-\section{Unleashing the Power of Fisher Forecasts with Automatic Differentiation}
+% \section{Unleashing the Power of Fisher Forecasts with Automatic Differentiation}
+\section{Fisher Forecasts \& Data Compression}
 \label{sec-fisher-forecast}
 
-As a first illustration of the interest of \textit{autodiff} in cosmological computations, we present in this section a few direct applications involving the computation of the Fisher information matrix, widely used in cosmology. \\
-Not only does the computation of the Fisher matrix become a trivial business, but the Fisher matrix itself becomes differentiable, allowing in particular for powerful survey optimization applications.
+As a first illustration of the value of \textit{autodiff} in cosmological computations, we present in this section a few direct applications involving the computation of the Fisher information matrix, widely used in cosmology. \\
+Not only does the computation of the Fisher matrix become trivial, but the Fisher matrix itself becomes differentiable, allowing in particular for powerful survey optimization applications.
 
 %JEC 5 August 22: not sure that should be given here as we have an Appendix for that and the main application described in the following sections concern DES Y1. 
 %\subsection{DES Y1 setting}
@@ -462,7 +463,7 @@ def likelihood(p):
 %\end{minted}
 The \texttt{jc.sparse} functions are implementation of block matrix computations: a sparse matrix is represented as a 3D array of shape $(n_y, n_x, n_{diag})$ composed of $n_y \times n_x$ square blocks of size $n_{diag} \times n_{diag}$.  The \texttt{jax.jit} decorator builds a compiled version of the function at the first use. 
 
-The first approach to obtaining approximate 1-sigma contours of the two parameters ($\Omega_c, \sigma_8$) with aa Fisher matrix uses the Hessian of the log-likelihood as follows:
+The first approach to obtaining approximate 1-sigma contours of the two parameters ($\Omega_c, \sigma_8$) with a Fisher matrix uses the Hessian of the log-likelihood as follows:
 \begin{equation}
 F_{i,j} = - \frac{\partial^2\mathcal{L}(\theta)}{\partial \theta_i \partial \theta_j}
 \qquad (\theta_1=\Omega_c, \theta_2=\sigma_8)
@@ -520,34 +521,39 @@ It is worth noting that in the two methods for Fisher matrix computations descri
 \label{sec-FOM-optimisation}
 % Needs to mention the tomo challenge, mention that we can backpropagate through a NN and the cosmology model
 % Maybe this can be only mentioned in the discussion.
-\FrL{Insist here on the fact that the FoM itself is differentiable.}
+% \FrL{Insist here on the fact that the FoM itself is differentiable.}
 Fisher forecasts are also commonly used in survey and analysis strategy strategy, where running a full posterior analysis for each possible choice would be unfeasible. The inverse area of a projection of a Fisher matrix in parameters of interest can be used as a metric for survey constraining power, such as in the Dark Energy Task Force report \citep{2006astro.ph..9591A}.
 
 \jaxcosmo\ was used in a recent example of such a process, for the  the LSST-DESC 3x2pt tomography optimization challenge \citep{2021OJAp....4E..13Z}, where the best methodology for assignment of galaxies to tomographic bins was assessed using several such figures of merit and related calculations. The \jaxcosmo\ metric proved to be stable and fast.
 
-
+Because JAX functions are differentiable with respect to all their inputs, including survey configuration parameters (e.g. depth, area, etc), we can even compute the derivative of an FoM with respect to these inputs, allowing for rapid and complete survey optimization.
 
 \subsection{Massive Optimal Compression in 3 Lines}
 
-\FrL{Here we can implement MOPED for the compression}
+% \FrL{Here we can implement MOPED for the compression}
 
-Once the Fisher matrix can be safely estimated, one can use the MOPED\footnote{Massively Optimised Parameter Estimation and Data compres-
-sion} algorithm \citep{2000MNRAS.317..965H,2016PhRvD..93h3525Z, 2017MNRAS.472.4244H}. In the case of the constant covariance matrix the algorithm compresses data in a way that is lossless at the Fisher matrix level (i.e. Fisher matrices estimated using the compressed and full data are identical, by construction)  which reduces a possibly large data vector $\mu$ of size $N$ to $M$ numbers, where $M$ is the number of parameters $\theta_i$ considered. For instance, in the previous section, $N=500$ as $\mu=(C_\ell^{p,q})$ and $M=2$ for $(\Omega_c,\sigma_8)$. The algorithm computes by iteration $M$ vectors of size $N$ such that (taking the notation of the previous section)
+Once the Fisher matrix has been accurately estimated, the MOPED\footnote{Massively Optimised Parameter Estimation and Data compression} algorithm can be used to compress data sets with minimal information loss \citep{2000MNRAS.317..965H,2016PhRvD..93h3525Z, 2017MNRAS.472.4244H}. In the case of the constant covariance matrix the algorithm compresses data in a way that is lossless at the Fisher matrix level (i.e. Fisher matrices estimated using the compressed and full data are identical, by construction)  which reduces a possibly large data vector $\mu$ of size $N$ to $M$ numbers, where $M$ is the number of parameters $\theta_i$ considered. For instance, in the previous section, $N=500$ as $\mu=(C_\ell^{p,q})$ and $M=2$ for $(\Omega_c,\sigma_8)$. 
+
+The algorithm computes by iteration $M$ vectors of size $N$ such that (taking the notation of the previous section)
 \begin{equation}
     b_i = \frac{C^{-1}\mu_{,i}-\sum_{j=1}^{i-1}(\mu_{,j}^T b_j)b_j}{\sqrt{F_{i,i}-\sum_{j=1}^{i-1}(\mu_{,j}^T b_j)^2}}
+\label{eq:moped}
 \end{equation}
 where $\mu_{,i}=\partial \mu/\partial \theta_i$ ($i=1,\dots,M$). The vectors $(b_i)_{i\leq M}$ satisfy the following orthogonality constraint
 \begin{equation}
     b_i^T C b_j = \delta_{i,j}
 \end{equation}
-The algorithm is similar to the Gram-Schmidt process, using the constant covariance matrix $C$ to define the scalar product $\langle b_i, b_j\rangle$. Then, the original data set $x=(C_\ell^{p,q})_{p,q,\ell}$ is compressed in a data set composed of $M$ numbers $(y_i)_{i\leq M}$ according to
+The algorithm is similar to the Gram-Schmidt process, using the constant covariance matrix $C$ to define the scalar product $\langle b_i, b_j\rangle$. Then, the original data set $x=C_\ell^{p,q}$ is compressed in a data set composed of $M$ numbers $y_i$ according to
 \begin{equation}
     y_i = b_i^T x
 \end{equation}
-These numbers are uncorrelated and of unit variance and this construction ensures that the log-likelihood of $(y_i)_{i\leq M}$  $(\theta_i)_{i\leq M}$, $y_i$ is identical to that of $x$ up to second order, meaning that the Fisher matrices derived from the two parameters should be identical, and in general the $y$ values should lose very little information compared to the full likelihood.
+These numbers are uncorrelated and of unit variance and this construction ensures that the log-likelihood of $y_i$ given  $\theta_i$ is identical to that of $x$ up to second order, meaning that the Fisher matrices derived from the two parameters should be identical, and in general the $y$ values should lose very little information compared to the full likelihood.
 
 In problems where a (constant) covariance matrix is estimated from simulations, the number of such simulations required for a given accuracy typically scales with the number of data points used. 
-MOPED therefore greatly reduces this number, often by a factor of hundreds. Since the uncertainty in the covariance due to a finite number of simulations must be accounted for \citep{2018MNRAS.473.2355S,2007A&A...464..399H}, this reduction can also offset any loss of information from the compression. \FrL{hummm but we still do need a full covariance in the compression algorithm, right?} \FrL{And we still do need to invert it... is the idea rather that if we dont have a perfect matrix at that stage the worse that can happen is sub optimal compression?}
+MOPED therefore greatly reduces this number, often by a factor of hundreds. Since the uncertainty in the covariance due to a finite number of simulations must be accounted for \citep{2018MNRAS.473.2355S,2007A&A...464..399H}, this reduction can also offset any loss of information from the compression. Inaccuracies in the full covariance matrix used in the data compression result only in information loss, not bias, as does mis-specification of the fiducial parameter set $\theta_i$ where equation \ref{eq:moped}.
+
+
+% \FrL{hummm but we still do need a full covariance in the compression algorithm, right?} \FrL{And we still do need to invert it... is the idea rather that if we dont have a perfect matrix at that stage the worse that can happen is sub optimal compression?}
 %JEC{Well there are several ways that $C$ can be questioned: parameter dependence (ie. fiducial model/true model), non-gaussianities, errors... So not sure that all these effects induce only sub-optimal compression. But it may be out of the scope of this paragraph/paper.}
 
 Another key advantage of the MOPED algorithm is to eliminate the need of large covariance matrix inversion of size $N\times N$ requiring $O(N^3)$ operations. This inversion takes place not only for the Fisher matrix computation (Eq.~\ref{eq:fisher_way2}, but more importantly in the log-likelihood computation (see the snippet of the previous section). The MOPED algorithm reduces the complexity to $O(M)$ operations.
@@ -565,7 +571,7 @@ y1 = b1.T @ data
 Then, the log-likelihood can easily be implemented as:
 \begin{lstlisting}[language=iPython]
 @jax.jit
-def compress_likelihood(p):
+def compressed_likelihood(p):
     # Create a new cosmology at these parameters
     cosmo = jc.Planck15(Omega_c=p[0], sigma8=p[1])
     # Compute mean Cl
@@ -573,7 +579,7 @@ def compress_likelihood(p):
     # likelihood using the MOPED vector
     return -0.5 * ((y0 - b0.T @ mu)**2 + (y1 - b1.T @ mu)**2)
 \end{lstlisting}
-The comparison between contour lines obtained with the original likelihood (uncompressed data set) and the MOPED version are shown in Figure \ref{fig:moped} in the case study of the previous section. Clearly, close to the negative likelihood minimum the lines agree very well.
+The comparison between contour lines obtained with the original likelihood (uncompressed data set) and the MOPED version are shown in Figure \ref{fig:moped} for the case study of the previous section. Clearly, close to the negative likelihood minimum the lines agree very well.
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{figures/moded.png}
@@ -587,7 +593,7 @@ The case where the covariance matrix depends upon the parameters is discussed by
 \section{Posterior Inference made fast by Gradient-Based Inference Methods}
 \label{sec:chmc}
 %
-In the following sections we review some statistical methods which directly benefit from the automatic differentiablity of \jaxcosmo likelihoods. We demonstrate a range of gradient-based methods, from Hamiltonian Monte Carlo (HMC), and its \textit{No-U-Turn} (NUTS) variant, to Stochastic Variational Inference (SVI). We further report on their respective computational costs in a DES-Y1 like analysis. All  the methods have been implemented using the \numpyro\ probabilistic programming language (PPL). 
+In the following sections we review some statistical methods which directly benefit from the automatic differentiablity of \jaxcosmo\ likelihoods. We demonstrate a range of gradient-based methods, from Hamiltonian Monte Carlo (HMC), and its \textit{No-U-Turn} (NUTS) variant, to Stochastic Variational Inference (SVI). We further report on their respective computational costs in a DES-Y1 like analysis. All  the methods have been implemented using the \numpyro\ probabilistic programming language (PPL). 
 %
 % and NUTS after a \textit{Neural Transport} perform using a \textit{Stochastic Variational Inference} (aka SVI). All  the methods have been implemented using the \numpyro\ probabilistic programming language (PPL). 
 %
@@ -597,7 +603,7 @@ In the following sections we review some statistical methods which directly bene
 \subsection{Description of the DES-Y1 exercise}
 \label{sec-DESY1}
 %JEC{Transfer of the model context from appendix here to ease the reading.}
-From the DES server\footnote{\url{http://desdr-server.ncsa.illinois.edu/despublic/y1a1_files/chains/2pt_NG_mcal_1110.fit}} we have extracted the $N(z)$ distributions of the sources and normalize them to $[1.47, 1.46, 1.50, 0.73]$ effective number of sources per $\mathrm{arcmin}^2$ for each of the four redshift bins, respectively. The lens distributions $N(z)$ for five redshift bins are also extracted. The corresponding shapes of the different distributions are performed thanks to \texttt{jc.redshift.kde\_nz} function (``\texttt{jc}'' hereafter stands for \texttt{jax\_cosmo}) and are presented in Figure \ref{fig-DESY1-src-lens-redshift}.
+From the DES Year 1 lensing and clustering data release \footnote{\url{http://desdr-server.ncsa.illinois.edu/despublic/y1a1_files/chains/2pt_NG_mcal_1110.fit}} we have extracted the $N(z)$ distributions of four source and five lens samples. We normalize the sources to $[1.47, 1.46, 1.50, 0.73]$ effective number of sources per $\mathrm{arcmin}^2$. These distributions are modelled in \jaxcosmo\ using a kernel density estimation in the \texttt{jc.redshift.kde\_nz} function and are presented in Figure \ref{fig-DESY1-src-lens-redshift}.
 \begin{figure}
 \centering
 \includegraphics[height=3cm]{figures/DESY1-source-redshift.png}
@@ -637,15 +643,13 @@ $dz_4$ & $\mathcal{N}[-0.018,0.022]$ \\
 \end{table}
 
 
-Then, using the \numpyro\ PPL, we have set up a \textit{forward model} following the reference \citep{2018PhRvD..98d3526A}. The prior descriptions of the different model parameters are described in Table \ref{tab-DESY1}.  For instance the $\Omega_c$ parameter is treated as random variable as followed
-%\begin{minted}[fontsize=\footnotesize]{python}
-\begin{lstlisting}[language=iPython]
-Omega_c = numpyro.sample('Omega_c', Uniform(0.1, 0.9))
-\end{lstlisting}
-%\end{minted}
+Using the \numpyro\ PPL, we then set up a forward model following the DES Y1 Pipeline \citep{2018PhRvD..98d3526A}. The model parameters and their prior distributions are shown in Table \ref{tab-DESY1}.  For instance the $\Omega_c$ parameter is treated as random variable as follows
 
-Then, we generate mock angular power spectra $C_\ell$ from the auto \& cross correlations of the Number Counts and Weak Lensing probes computed with the \texttt{gaussian\_cl\_covariance\_and\_mean} function in the \texttt{jc.angular\_cl} module. One reads
-%\begin{minted}[fontsize=\footnotesize]{python}
+\begin{lstlisting}[language=iPython]
+Omega_c = numpyro.sample("Omega_c", Uniform(0.1, 0.9))
+\end{lstlisting}
+
+Then, we generate mock angular power spectra $C_\ell$ from the auto \& cross correlations of the Number Counts and Weak Lensing probes computed with the \texttt{gaussian\_cl\_covariance\_and\_mean} function in the \texttt{jc.angular\_cl} module. The code reads:
 \begin{lstlisting}[language=iPython]
 # Define the lensing and number counts probe
 probes = [jc.probes.WeakLensing(nzs_s_sys, 
@@ -656,42 +660,41 @@ cl, C = gaussian_cl_covariance_and_mean(cosmo,
                  ell, probes, 
                  f_sky=0.25, sparse=True)
 \end{lstlisting}
-%\end{minted} 
-with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. The generation of the mock data (\texttt{cl\_obs}) yields from the possibility to execute a conditioned model with a fiducial cosmology, leaving \numpyro\ dealing with the random number generation:
-%\begin{minted}[fontsize=\footnotesize]{python}
+
+with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. Our mock data (\texttt{cl\_obs}) comes from this model evaluated at a fiducial cosmology, with \numpyro\ dealing with the random number generation that generates added noise:
+
 \begin{lstlisting}[language=iPython]
-fiducial_model = condition(model,
-    {'Omega_c':0.2545, 'sigma8':0.801, 
-    'h':0.682, 'Omega_b':0.0485, 'w0':-1.,'n_s':0.971,
-     'A':0.5,'eta':0.,
-     'm1':0.0,'m2':0.0,'m3':0.0,'m4':0.0,
-     'dz1':0.0,'dz2':0.0,'dz3':0.0,'dz4':0.0,
-     'b1':1.2,'b2':1.4,'b3':1.6,'b4':1.8,'b5':2.0
+fiducial_model = numpyro.condition(model,
+    {"Omega_c":0.2545, "sigma8":0.801, 
+    "h":0.682, "Omega_b":0.0485, "w0":-1.,"n_s":0.971,
+     "A":0.5,"eta":0.,
+     "m1":0.0,"m2":0.0,"m3":0.0,"m4":0.0,
+     "dz1":0.0,"dz2":0.0,"dz3":0.0,"dz4":0.0,
+     "b1":1.2,"b2":1.4,"b3":1.6,"b4":1.8,"b5":2.0
       })
 
 with seed(rng_seed=42):
     cl_obs, P, C = fiducial_model()
 \end{lstlisting}
-%\end{minted}
+\JZ{We do not describe the model function above here. I guess it just adds noise to the cl?}
 
-The \textit{inference model} looks very similar to the \textit{forward model} excepts that first we fix the angular power spectra covariance matrix $C$ (and its inverse $P$) and secondly we let \numpyro\ generates the model $C_{\ell}$ from the priors
-%\begin{minted}[fontsize=\footnotesize]{python}
+
+The \textit{inference model} looks very similar to the \textit{forward model} excepts that first we fix the angular power spectra covariance matrix $C$ (and its inverse $P$) and secondly we let \numpyro\ generates the model $C_{\ell}$ from the priors:
 \begin{lstlisting}[language=iPython]
 cl = jc.angular_cl.angular_cl(cosmo, ell, 
                               probes).flatten()
-return numpyro.sample('cl', MultivariateNormal(cl, 
+return numpyro.sample("cl", MultivariateNormal(cl, 
                             precision_matrix=P,
                             covariance_matrix=C))
 \end{lstlisting}
-%\end{minted}
 
-These theoretical $C_{\ell}$ are in turn conditioned by the mock $C_\ell$ as followed
-%\begin{minted}[fontsize=\footnotesize]{python}
+These theoretical $C_{\ell}$ are in turn conditioned on the mock $C_\ell$:
+
 \begin{lstlisting}[language=iPython]
-observed_model = condition(model, {'cl': data})
+observed_model = numpyro.condition(model, {"cl": data})
 \end{lstlisting}
-%\end{minted}
-%Then, as an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as followed
+
+%Then, as an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as follows
 %\begin{minted}[fontsize=\footnotesize]{python}
 %\begin{lstlisting}[language=iPython]
 %nuts_kernel = numpyro.infer.NUTS(observed_model,
@@ -721,20 +724,20 @@ samples from high dimensional parameter spaces.  It was introduced in \citep{198
 and developed extensively since.  See \citet{betancourt} for a full review; we describe
 very basic features here.
 
-HMC samples spaces by generating particle trajectories through the space, using the log-posterior as the negative potential energy of a particle at each point $q$ in the space. Associated to $q$, we introduce an auxiliary $p$ variable in the spirit of Hamiltonian momentum such that
+HMC samples spaces by generating particle trajectories through the space, using the log-posterior as the negative potential energy of a particle at each point $q$ in the space. Associated with $q$, we introduce an auxiliary $p$ variable as Hamiltonian momentum such that
 \begin{equation}
-- \log{\cal P}(q) = V(q) + cte; \quad H(q,p) = V(q) + U(p)
+- \log{\cal P}(q) = V(q) \quad H(q,p) = V(q) + U(p)
 \end{equation}
-where $U(p)$ is a sort of \textit{kinetic} term defined by 
+where $U(p)$ is a kinetic energy-like term defined by 
 \begin{equation}
 U(p) = p^T M^{-1} p
 \end{equation}
-At each sample, a trajectory is initialized with a random momentum $p$, and then integrated using Hamilton's equations with a numerical integration :
+At each sample, a trajectory is initialized with a random momentum $p$, and then Hamilton's equations are integrated:
 \begin{align}
 \frac{\mathrm{d}p}{\mathrm{d}t} &= - \frac{\partial V}{\mathrm{d} q} = \frac{\partial \log{\cal P}}{\mathrm{d} q} \\
 \frac{\mathrm{d}q}{\mathrm{d}t} &= + \frac{\partial U}{\mathrm{d} p} = M^{-1} p
 \end{align}
-where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also used to set the scale of the random initial velocities. These differential equations may be integrated iterating over $L$ steps the following \textit{leapfrog} algorithm
+where $M$ is a mass matrix which should be set to approximate the covariance of the posterior. This is also used to set the scale of the random initial velocities. These differential equations may be integrated numerically, taking $L$ small steps of the \textit{leapfrog} algorithm:
 \begin{align}
     p_{n+\frac{1}{2}} &= p_n -\frac{\varepsilon}{2} \frac{\partial V}{\mathrm{d} q}(q_n) \\
     q_{n+1} & = q_n +\varepsilon M^{-1} p_{n+\frac{1}{2}} \\
@@ -742,20 +745,20 @@ where $M$ is a mass matrix which should be set to approximate the covariance of 
 \end{align}
 where $\varepsilon$ is a step size parameter.
 
-Formally, the set of $n_\mathrm{dim}$ moment are treated as new parameters, and after 
+Formally, the set of $n_\mathrm{dim}$ momenta are treated as new parameters, and after 
 some number of integration steps a final point in the trajectory is compared to the initial one,
-and a Metropolis-Hastings acceptance criterion on the total energy $H(q,p)$ is applied. If the trajectory is perfectly simulation then this acceptance is unity, since energy is conserved; applying it allows
-a relaxation to the integration accuracy.
+and a Metropolis-Hastings acceptance criterion on the total energy $H(q,p)$ is applied. If the trajectory is perfectly simulated then this acceptance is unity, since energy is conserved; applying it allows
+a relaxation of the integration accuracy.
 
-That gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing,
+The gradients $\partial \log{\cal P} / \mathrm{d} q$ can be estimated using finite differencing,
 but this typically requires at least $4 n_{\mathrm{dim}} + 1$ posterior evaluations per point, greatly slowing it
 in high dimension, and as with the Fisher forecasting is highly prone to numerical error. Automatically
-calculating a Hessian, as in \jaxcosmo, makes it feasible and efficient. \FrL{I don't think it uses a Hesssian? you only need the derivative of the log posterior wrt parameters. The hessian would be needed to get a good estimate of M.}
+calculating the derivative, as in \jaxcosmo, makes it feasible and efficient.
 
-\FrL{Needs a little paragraph to explain with HMC is supposed to be better than plain Metropolis-Hastings.}
-Metropolis-Hastings suffers from random walk to explore the geometry of the target distribution to get the region of maximum probability (ie. typical set) which is particularly  penalising in large dimensions. The HMC dynamics allow to make large jumps to explore the region around a sample to guess the next good one.
+Metropolis-Hastings, and related methods like \texttt{emcee} \citep{goodman-weare,emcee},  suffer as dimensionality increases,  as the region of high probability mass (the \textit{typical set}) becomes a very small fraction of the total parameter space volume. At high enough dimension they become a slow random walk around the space and cannot remain in typical set regions.
+The dynamics of HMC allows it to make large jumps that nonetheless stay within the region of high posterior.
 
-The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the number of steps as well as the step size of integration. The next section addresses this problem thanks to the No-U-Turn HMC version.
+The tricky part of HMC is that the \textit{leapfrog} algorithm needs tuning to set the number of steps as well as the step size of integration. The next section addresses this problem thanks to the No-U-Turn HMC version.
 
 
 
@@ -792,36 +795,45 @@ The tricky point is that the \textit{leapfrog} algorithm needs tuning to set the
 % Show the advantage of using NUTS 
 % look at difference in efficiency in terms of how many times we need to call the model.
 
-The No-U-Turn (\textit{NUTS})  variant of the traditional HMC sampler has been introduced in \citet{10.5555/2627435.2638586}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$. Namely, the root algorithm of HMC deals with the \textit{leapfrog} integration which requires to set two main parameters: $\varepsilon$ the step size and $L$ the number of steps. As stated by the authors, NUTS  uses a recursive algorithm to build a set of likely candidate samples that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. So, in an automatic manner the parameter $L$ is adjusted to produce statistically  a new point $x_{i+1}$ independent from $x_i$, at the expense of the increase the number of model calls. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives in power of $2$ the maximal number of model calls at each generation.
+The No-U-Turn (\textit{NUTS})  variant of the traditional HMC sampler was introduced in \citet{10.5555/2627435.2638586}. It aims to help finding a new point  $x_{i+1}$ from  the current $x_i$ by finding good and dynamic choices for the leapfrog integration parameters in the root HMC algorithms, the step size $\varepsilon$ and the number of steps $L$.
 
-Both sampler HMC and NUTS are available in the \numpyro\ library. After the forward model creation for the DES-Y1 3x2pts exercise described in section \ref{sec-DESY1}: \begin{itemize}
-    \item we have first applyied  an affine transformation on cosmological, intrinsic alignment and biais parameters to use an unique uniform prior $\mathcal{U}[-5,5]$ (Table~\ref{tab-DESY1}); %\FrL{these are not latent variables, but model parameters. Also people don't know what this reparametrisation means.}
-    \item  %\FrL{People don't know what the warmup phase is...}
-    we use a structured mass matrix consisting on essentially a diagonal form  with a block structure for the following sets of parameters $(\Omega_b,\Omega_c,\sigma_8,w_0,h)$ and $(b_i)_{i:1\dots5}$. This matrix structuring is motivated by the expected degree of correlation of the concerned parameters as can be shown for instance in Figure \ref{fig_cobaya_NUTS_SVI_bis}.
+NUTS sets iterates the leapfrog algorithm not for a fixed $L$, but until the trajectory starts to ``double back'' and return to previously visited region, at the cost of increasing the number of model evaluations. The user has to set a new  parameter  (\texttt{max\_tree\_depth}) which gives as a power of $2$ the maximum number of model calls at each generation.
+
+Both sampler HMC and NUTS are available in the \numpyro\ library. After the forward model creation for the DES-Y1 3x2pt exercise described in section \ref{sec-DESY1}: \begin{itemize}
+    \item we apply an affine transformation on the cosmological, intrinsic alignment and bias parameters to use a consistent uniform prior $\mathcal{U}[-5,5]$ (Table~\ref{tab-DESY1});
+    \item
+    we use a structured mass matrix $M$ in a block diagonal form with the blocks as the following sets of parameters $(\Omega_b,\Omega_c,\sigma_8,w_0,h)$ and $(b_i)_{i:1\dots5}$. The remaining parameters have uncorrelated masses. This matrix structure is motivated by the expected degree of parameter correlation as shown for instance in Figure \ref{fig_cobaya_NUTS_SVI_bis}.
 \end{itemize}
 
-As an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as followed with \numpyro:
-\begin{lstlisting}[language=iPython]
-%nuts_kernel = numpyro.infer.NUTS(observed_model,
-              step_size=1e-1,
-              init_strategy=numpyro.infer.init_to_median,
-              dense_mass=True,
-              max_tree_depth=7)
+% As an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as follows with \numpyro:
+% \begin{lstlisting}[language=iPython]
+% nuts_kernel = numpyro.infer.NUTS(observed_model,
+%               step_size=1e-1,
+%               init_strategy=numpyro.infer.init_to_median,
+%               dense_mass=True,
+%               max_tree_depth=7)
 
-mcmc = numpyro.infer.MCMC(nuts_kernel, 
-                          num_warmup=200, 
-                          num_samples=1000,
-                          num_chains=16,
-                          chain_method='vectorized',
-                          progress_bar=False)
+% mcmc = numpyro.infer.MCMC(nuts_kernel, 
+%                           num_warmup=200, 
+%                           num_samples=1000,
+%                           num_chains=16,
+%                           chain_method='vectorized',
+%                           progress_bar=False)
 
-mcmc.run(jax.random.PRNGKey(42))
-\end{lstlisting}
+% mcmc.run(jax.random.PRNGKey(42))
+% \end{lstlisting}
 
-The NUTS sampler have been running with 16 chains of 1,000 samples each after a warm-up phase consisting of 200 samples, and the \texttt{max\_tree\_depth} has been set to 7 by default (ie. 128 steps for each iteration). %\FrL{it should explain that vectorized means 16 chains in parallel on a single GPU.}
-The "vectorized" option runs multi chains in a single GPU thanks to the JAX \textit{vmap} mechanism. If one dispose of several GPU devices, then the using the JAX paralellization mechanism (\textit{pmap}), it is possible to launch on each GPU device the "vectorized" sampling as done in the previous snippet, and get back all the MCMC chains. However, experiments have been undertaken on a single GPU either a NVidia Titan Xp (12GB RAM) on a desktop or an NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapse time for these experiments was 20 hours.
+We have run the NUTS sampler using \texttt{numpyro.infer.NUTS} on the DES Y1 likelihood,  with 16 chains of 1,000 samples each after a warm-up phase consisting of 200 samples, with the \texttt{max\_tree\_depth} set to seven (ie. 128 steps for each iteration). %\FrL{it should explain that vectorized means 16 chains in parallel on a single GPU.}
+Using the ``vectorized'' \texttt{numpyro} option we ran all 16 chains simultaneously on a single GPU, made possible by the JAX \textit{vmap} mechanism. If one has several GPU devices available, then the using the JAX paralellization mechanism (\textit{pmap}), it is further possible to launch the vectorized sampling across the devices, and get back all the MCMC chains. However, the experiments have all been undertaken on a single GPU, either a NVidia Titan Xp (12GB RAM) on a desktop or an NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapsed time for these experiments was 20 hours.
 
-The results in terms of relative effective sample sizes (aka ``ESS'') are detailed in Table~\ref{tab-ESS-NUTS_SVI-1} while the confidential level (CL) contours are presented in Figure \ref{fig_cobaya_NUTS_SVI}. One notices the dramatic improvement of the ESS by about a factor 10 using the NUTS sampler compared to the highly-optimized \texttt{Cobaya} Metropolis-Hastings implementation \citep{2019ascl.soft10019T,2021JCAP...05..057T} which has last about 40 hours on CPU to generate 70,000 samples. The CL contours are also in very good agreement. \FrL{we should rephrase this a bit to say that Cobaya is our reference.} It is worth to point out that the mass matrix structuring operation is a very effective as it increases the sampling efficiency by about a factor 2.   Anticipating the Section~\ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective solution to validate the model with fewer samples, we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Table~\ref{tab-ESS-NUTS_SVI-1}), then the user is highly encouraged to tune this critical parameter. 
+The results in terms of relative effective sample sizes (ESS) are detailed in Table~\ref{tab-ESS-NUTS_SVI-1} while the confidential level (CL) contours are presented in Figure \ref{fig_cobaya_NUTS_SVI}. We compare to a reference sample from the highly-optimized \texttt{Cobaya} Metropolis-Hastings implementation \citep{2019ascl.soft10019T,2021JCAP...05..057T}, which is widely used in cosmology and which we ran for around 40 hours on CPU to obtain the set of contours shown.
+
+There is a dramatic improvement ofinthe ESS by about a factor of 10 using the NUTS sampler compared to Cobaya, with very good agreement between the CL contours. It is worth noting that the mass matrix structure described above increases the sampling efficiency by about a factor of two.
+
+The speed of the sampling could be improved: we have tested using the parameter \texttt{max\_tree\_depth=5} and found convergence in five hours, showing a linear scaling in this parameter while keeping the sampling efficiencies at a high level; the user is highly encouraged to tune this critical parameter. \JZ{I don't think the anticipation of the next section was needed here to make the point so I removed it, but please let me know if you're unhappy about this. Otherwise if you're happy please delete this comment.}
+
+% Anticipating the Section~\ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective solution to validate the model with fewer samples, 
+% we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Table~\ref{tab-ESS-NUTS_SVI-1}), then the user is highly encouraged to tune this critical parameter. 
 %
 \begin{figure*}
 \centering
@@ -835,7 +847,8 @@ The results in terms of relative effective sample sizes (aka ``ESS'') are detail
 \subsection{Stochastic Variational Inference}
 \label{sec-SVI}
 %
-Let us remind briefly what is the \textit{Stochastic Variational Inference} method \citep{10.5555/2567709.2502622, 8588399} and show where auto-differentiation helps. If one  writes $p(z)$ the prior, $p(\mathcal{D}|z)$ the likelihood and $p(\mathcal{D})$ the marginal likelihood, then thanks to the  Bayes theorem one gets $p(z|\mathcal{D})=p(z)p(\mathcal{D}|z)/p(\mathcal{D})$ the posterior distribution of a model with latent variables $z$ and a set of observations $\mathcal{D}$. VI aims to get an approximation of this distribution, ie. $p(z|\mathcal{D}) \approx q(z;\lambda)$, by determining the variational parameters $\lambda$ of a predefined distribution. To do so, one uses the Kullback-Leibler divergence of the two distributions $KL(q(z;\lambda)||p(z|\mathcal{D}))$ leading to the following relation
+
+We now explore \textit{Stochastic Variational Inference} \citep{10.5555/2567709.2502622, 8588399}, another inference algorithm enabled by auto-differentiation. If we  write $p(z)$ the prior, $p(\mathcal{D}|z)$ the likelihood and $p(\mathcal{D})$ the marginal likelihood, then thanks to Bayes theorem we have $p(z|\mathcal{D})=p(z)p(\mathcal{D}|z)/p(\mathcal{D})$ as the posterior distribution of a model with latent variables $z$ and a set of observations $\mathcal{D}$. Variational Inference (VI) aims to find an approximation to this distribution, ie. $p(z|\mathcal{D}) \approx q(z;\lambda)$, by determining the variational parameters $\lambda$ of a predefined distribution. To do so, one uses the Kullback-Leibler divergence of the two distributions $KL(q(z;\lambda)||p(z|\mathcal{D}))$ leading to the following relation
 \begin{align}
 \log p(\mathcal{D}) &= \mathtt{ELBO} +  KL(q(z;\lambda)||p(z|\mathcal{D})) \label{eq-ELBO} \\
 \mathrm{with} \ \mathtt{ELBO} &\equiv -\mathbb{E}_{q(z;\lambda)}\left[ \log q(z;\lambda)\right] + \mathbb{E}_{q(z;\lambda)}\left[ \log p(z,\mathcal{D}) \right] 
@@ -850,10 +863,12 @@ The function $\mathcal{L}(\lambda)$ is the cost function used in practice. It is
 \mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{q(z;\lambda)}\left[ \log q(z;\lambda)\right]}_{guide} - \underbrace{\mathbb{E}_{q(z;\lambda)}\left[ \log p(z,\mathcal{D}) \right]}_{model}
 \label{eq-loss-svi-1}
 \end{equation}
-where the \textit{guide} in the \numpyro\ library may be a multi-variate Gaussian distribution (MVN) for instance.
+where the \textit{guide} in the \numpyro\ library (i.e. the parametrized function $q$) may be a multi-variate Gaussian distribution (MVN) for instance.
 
-Using the auto-differentation tool, one can use ``black-box'' guides (aka \textit{automatic differentiation variational inference}). As stated by the authors of \citep{10.5555/3122009.3122023} ADVI helps specifying a variational family appropriate to the model, computing the corresponding objective
-function, taking derivatives, and running a gradient-based or coordinate-ascent optimization. First is defined a invertible differentiable transformation $T$ of the original latent variables $z$ into new variables $\xi$, such $\xi=T(z)$ and $z=T^{-1}(\xi)$. The main advantage of this reparametrisation is that the minimization can be performed with no bound constraints. One can develop ``AutoGuides'' (\numpyro\ terminology) that can be adapted to the user models. Then, the cost function reads
+Using the auto-differentation tool, one can use ``black-box'' guides (aka \textit{automatic differentiation variational inference}). As stated by the authors of \citep{10.5555/3122009.3122023} ADVI specifies a variational family appropriate to the model, computes the corresponding objective
+function, takes derivatives, and runs a gradient-based or coordinate-ascent optimization. First we define a invertible differentiable transformation $T$ of the original latent variables $z$ into new variables $\xi$, such $\xi=T(z)$ and $z=T^{-1}(\xi)$, where the new $\xi$ parameters are unbounded, $xi_i in (\-infty, \infty)$ and so the subsequent minimization step can be performed with no bound constraints. 
+% One can develop ``AutoGuides'' (\numpyro\ terminology) that can be adapted to the user models.
+The cost function then reads
 \begin{equation}
 \mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{q(\xi;\lambda)}\left[ \log q(\xi;\lambda)\right]}_{guide} - \underbrace{\mathbb{E}_{q(\xi;\lambda)}\left[ \log p(\xi,\mathcal{D}) \right]}_{model}
 \label{eq-loss-svi-2}
@@ -862,8 +877,8 @@ with
 \begin{equation}
 p(\xi,\mathcal{D}) \bydef p(T^{-1}(\xi),\mathcal{D}) |J_{T^{-1}}(\xi)|
 \end{equation}
-which exhibit the Jacobian of the $T^{-1}$ transformation.
-The evaluation of the expectations during gradient descent of the loss Eq.~\ref{eq-loss-svi-2} can be done using what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \cite{10.5555/2969239.2969303}).  Let us illustrated the method using an invertible transformation (aka \textit{normalizing flow})  $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, such that $\zeta\sim \mathcal{N}(0,I)$\footnote{Notice that $z=T^{-1}(\xi)=(T^{-1} \circ S_\lambda^{-1})(\zeta)=(S_\lambda \circ T)^{-1}(\zeta)=F_\lambda(\zeta)$.}. The Jacobian of this distribution is 1 by definition (volume conservation), so the lost function reads
+which includes the Jacobian of the $T^{-1}$ transformation.
+The evaluation of the expectations during gradient descent of the loss Eq.~\ref{eq-loss-svi-2} can be done using what is called \textit{elliptical standardisation} or \textit{re-parametrization trick} or \textit{coordinate transformation} (see references in \citealt{10.5555/2969239.2969303}).  Let us illustrate the method using an invertible transformation  $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, where $\zeta\sim \mathcal{N}(0,I)$\footnote{Notice that $z=T^{-1}(\xi)=(T^{-1} \circ S_\lambda^{-1})(\zeta)=(S_\lambda \circ T)^{-1}(\zeta)=F_\lambda(\zeta)$.}. The Jacobian of this distribution is 1 by definition (volume conservation), so the loss function reads
 \begin{multline}
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
 \label{eq-loss-svi-3}
@@ -925,7 +940,7 @@ which is evaluated with optimal $\lambda^\ast$ according to maximization of the 
 \caption{Same configuration as in Figure \ref{fig_cobaya_NUTS_SVI} but for the highly correlated five lens galaxy bias.}
 \label{fig_cobaya_NUTS_SVI_bis}
 \end{figure*}
-The \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as followed (See the notebook \nblink{DES_Y1_SVI_and_NeutraReparam}):
+The \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as follows (See the notebook \nblink{DES_Y1_SVI_and_NeutraReparam}):
 \begin{lstlisting}[language=iPython]
 from numpyro.infer.reparam import NeuTraReparam
 # Reparametrisation of model to feed NUTS sampler
