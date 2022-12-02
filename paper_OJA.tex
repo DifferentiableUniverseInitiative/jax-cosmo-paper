@@ -188,7 +188,6 @@ J. Zuntz$^3$,\\
 The recent JAX library has created a new ecosystem from which probabilistic programming software can take enormous benefit: batch acceleration, just-in-time compilation, and automatic optimization of code for different hardware modalities (CPU, GPU, TPU) can provide huge speed-ups to a wide range of different problems. In particular, JAX exposes an \textit{automatic differentiation} mechanism, which can take a python function that uses JAX and return its (vector) derivative.  This gives us the opportunity to apply a range of powerful but otherwise unfeasible algorithms used in Bayesian inference, such as Hamiltonian Monte Carlo (HMC) and Variational Inference. 
 
 To take advantage of these possibilities within cosmology we have developed the \jaxcosmo\ library, which implements background evolution, linear and non linear power spectra (using \texttt{halofit} or the Eisenstein and Hu transfer function), as well as angular power spectra ($C_\ell$) with the Limber approximation for galaxy and weak lensing probes. We discuss algorithms made possible by this library, and present comparisons with the Core Cosmology Library as a benchmark, and run a series of tests using the Dark Energy Survey Year 1 3x2pt analysis with the \numpyro\ library to demonstrate practical usage. 
-
 We show that clear improvements are possible using HMC compared to Metropolis-Hasting, and that the Normalizing Flows using the Neural Transport is a promising methodology.
 %{\color{red}
 %;in the early phases of Bayesian model development JAZ not sure what this means so I left it out}
@@ -497,7 +496,6 @@ dmu = jac_mean(params)
 # Now we can compose the Fisher matrix
 F = jc.sparse.dot(dmu.T, jc.sparse.inv(cov), dmu)
 \end{lstlisting}
-% done by JEC 13Sept22 \JZ{dmu in the above is not defined anywhere}
 
 JAX implementations of the two methods agree to near perfect accuracy, as shown in Figure \ref{fig:simple_fisher_1}.
 \begin{figure}
@@ -508,7 +506,7 @@ JAX implementations of the two methods agree to near perfect accuracy, as shown 
 \end{figure}
 %
 It is worth noting that in the two methods for Fisher matrix computations described above, the user does not need to vary individual parameter values to compute the 1st or 2nd order derivatives; this is in contrast to the usual finite difference methods. As an illustration, we have used the CCL library to compute the Fisher matrix via Equation \ref{eq:fisher_way2}. To do so, the Jacobian ($\partial \mu/\partial\theta_\alpha$) is computed with centered  order 4 finite differences available in the \texttt{Numdifftools} Python package\footnote{\url{https://numdifftools.readthedocs.io}}. Using the parameter values spaced by ($10^{-6}$, $10^{-2}$, $10^{-1}$) one obtains three different approximation of the 1-sigma contours as shown on Figure \ref{fig:simple_fisher_2}. The contour that agrees best with the \jaxcosmo\ method is obtained with the intermediate spacing parameter $10^{-2}$, implying that the user must tune this parameter carefully. Although very simple, this case study exhibits a significant challenge of finite difference methods for computing the Fisher matrix as has been shown for instance in a more advanced case study in \citet{2021arXiv210100298B}. 
-% done by JEC 13Sept22 \JZ{Should probably latex the step sizes $10^{-1}, 10^{-2}, 10^{-6}$ in the figure legend}
+
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{figures/simple_fisher_2.png}
@@ -643,7 +641,7 @@ $dz_4$ & $\mathcal{N}[-0.018,0.022]$ \\
 \end{table}
 
 
-Using the \numpyro\ PPL, we then set up a forward model following the DES Y1 Pipeline \citep{2018PhRvD..98d3526A}. The model parameters and their prior distributions are shown in Table \ref{tab-DESY1}.  For instance the $\Omega_c$ parameter is treated as random variable as follows
+Using the \numpyro\ PPL, we then set up a forward model following the DES Y1 Pipeline \citep{2018PhRvD..98d3526A}. Here we show some key elements of the implementation; the details and inference examples may be found in the following notebook \nblink{VectorizedNumPyro_block}. The model parameters and their prior distributions are shown in Table \ref{tab-DESY1}.  For instance the $\Omega_c$ parameter is treated as random variable as follows
 
 \begin{lstlisting}[language=iPython]
 Omega_c = numpyro.sample("Omega_c", Uniform(0.1, 0.9))
@@ -661,7 +659,7 @@ cl, C = gaussian_cl_covariance_and_mean(cosmo,
                  f_sky=0.25, sparse=True)
 \end{lstlisting}
 
-with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. Our mock data (\texttt{cl\_obs}) comes from this model evaluated at a fiducial cosmology, with \numpyro\ dealing with the random number generation that generates added noise:
+with \texttt{cosmo} an instance of the \texttt{jc.Cosmology} setting the cosmological parameters generated with the priors, and \texttt{ell} (ie. $\ell$) a series of 50 angular modes. After encapsulating the code above with input sampled parameters (using \numpyro\ distribution classes) in a function \texttt{model}, we can generate our mock data (\texttt{cl\_obs}). This comes comes from this model function evaluated at a fiducial cosmology, with \numpyro\ dealing with the random number generation that generates added noise:
 
 \begin{lstlisting}[language=iPython]
 fiducial_model = numpyro.condition(model,
@@ -676,8 +674,6 @@ fiducial_model = numpyro.condition(model,
 with seed(rng_seed=42):
     cl_obs, P, C = fiducial_model()
 \end{lstlisting}
-\JZ{We do not describe the model function above here. I guess it just adds noise to the cl?}
-
 
 The \textit{inference model} looks very similar to the \textit{forward model} excepts that first we fix the angular power spectra covariance matrix $C$ (and its inverse $P$) and secondly we let \numpyro\ generates the model $C_{\ell}$ from the priors:
 \begin{lstlisting}[language=iPython]
@@ -693,6 +689,7 @@ These theoretical $C_{\ell}$ are in turn conditioned on the mock $C_\ell$:
 \begin{lstlisting}[language=iPython]
 observed_model = numpyro.condition(model, {"cl": data})
 \end{lstlisting}
+
 
 %Then, as an example the optimisation of the cosmological parameters using for instance the NUTS flavour of MCMC can be conducted as follows
 %\begin{minted}[fontsize=\footnotesize]{python}
@@ -714,7 +711,7 @@ observed_model = numpyro.condition(model, {"cl": data})
 %\end{lstlisting}
 %%\end{minted}
 %More details can be found in the repository of this paper to perform a \numpyro\ modeling using \jaxcosmo: a structured NUTS sampling described in Section~\ref{sec-NUTS} \nblink{VectorizedNumPyro_block}, and a SVI optimisation followed by NUTS sampling of Section~\ref{sec-Neural-Reparametrisation} \nblink{DESY_Y1_SVI_and_NeutraReparam}. 
-How to use this model to perform inference is described in the sections \ref{sec-NUTS} and \ref{sec-SVI}.
+How to use this model to perform inference is described in the sections \ref{sec-NUTS} and \ref{sec-SVI}. %For a complete example of this functionality see the attached notebook: \nblink{VectorizedNumPyro_block}.
 %
 \subsection{Vanilla Hamiltonian Monte Carlo}
 %
@@ -830,7 +827,9 @@ The results in terms of relative effective sample sizes (ESS) are detailed in Ta
 
 There is a dramatic improvement ofinthe ESS by about a factor of 10 using the NUTS sampler compared to Cobaya, with very good agreement between the CL contours. It is worth noting that the mass matrix structure described above increases the sampling efficiency by about a factor of two.
 
-The speed of the sampling could be improved: we have tested using the parameter \texttt{max\_tree\_depth=5} and found convergence in five hours, showing a linear scaling in this parameter while keeping the sampling efficiencies at a high level; the user is highly encouraged to tune this critical parameter. \JZ{I don't think the anticipation of the next section was needed here to make the point so I removed it, but please let me know if you're unhappy about this. Otherwise if you're happy please delete this comment.}
+The speed of the sampling could be improved: we have tested using the parameter \texttt{max\_tree\_depth=5} and found convergence in five hours, showing a linear scaling in this parameter while keeping the sampling efficiencies at a high level; the user is highly encouraged to tune this critical parameter. 
+
+%\JZ{I don't think the anticipation of the next section was needed here to make the point so I removed it, but please let me know if you're unhappy about this. Otherwise if you're happy please delete this comment.}
 
 % Anticipating the Section~\ref{sec-Neural-Reparametrisation} devoted to the Neural Transport which is an effective solution to validate the model with fewer samples, 
 % we have used a NUTS sampling with \texttt{max\_tree\_depth=5} those elapse time is 5 hours. This clearly shows a linear scaling with respect to the number of steps per iteration keeping the sampling efficiencies at a high level (see Table~\ref{tab-ESS-NUTS_SVI-1}), then the user is highly encouraged to tune this critical parameter. 
@@ -883,7 +882,7 @@ The evaluation of the expectations during gradient descent of the loss Eq.~\ref{
 -\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
 \label{eq-loss-svi-3}
 \end{multline}
-where $\mathbb{H}(q)$ is the Shannon entropy of the $q$ distribution, so its gradient can be computed once for all for a given $q$ distribution family and reused in any user model.  
+where $\mathbb{H}(q)\equiv \mathbb{E}_{q(\xi;\lambda)}\left[ \log q(\xi;\lambda)\right]$ is the Shannon entropy of the $q$ distribution; its gradient can be computed once for all for a given $q$ distribution family and reused in any user model.  
 Then,
 to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the expectation which leads to\footnote{To simplify the notation, $T^{-1}(S_\lambda^{-1}(\zeta))$ has been replaced by $z$.}
 \begin{multline}
@@ -894,30 +893,32 @@ to get $\nabla_\lambda \mathcal{L}$, the $\nabla$ operator can be put inside the
 + \nabla_\lambda \mathbb{H}[q(\xi;\lambda)]
 \label{eq-loss-svi-4}
 \end{multline}
-An concrete example of the gradient formula is given in Appendix \ref{app-SVI_MVN} with the multivariate Gaussian distribution family used as the guide.
+%JEC: I think now it is not usefull. A concrete example of the gradient formula is given in Appendix \ref{app-SVI_MVN} with the multivariate Gaussian distribution family used as the guide.
+
 %
 %\FrL{here it would be better to have a small statement on the limitations of VI, and why it's a good idea to then go to Neutra.} 
 %\FrL{we don't have plots of just the VI?}\JEC{Good point: I have SVI alone with both MVN or Block Neural Autoregressive Flow. See new figure.}
-
-Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{sec-DESY1}) where the \texttt{model} is described and the \texttt{cl\_obs} are the observed $C_\ell$.}
-\begin{lstlisting}[language=iPython]
-import numpyro.infer.autoguide as autoguide
-from numpyro.infer import SVI, Trace_ELBO
-from numpyro.optim import Adam
-# choose a SVI guide 
-guide = autoguide.AutoMultivariateNormal(model,
-        init_loc_fn=numpyro.infer.init_to_median())
-# SVI optimisation 
-optimizer = numpyro.optim.Adam(1e-3)
-svi = SVI(model_spl, guide,optimizer,loss=Trace_ELBO(num_particles=10))
-svi_result = svi.run(jax.random.PRNGKey(0),20_000, cl_obs)
-#To get samples from SVI approximated posterior 
-samples = guide.sample_posterior(jax.random.PRNGKey(1), svi_result.params, sample_shape=(100_000,))
-\end{lstlisting}
+% \JZ{I removed a code snippet here since it was really about numpyro instead of jax-cosmo and felt slightly out of place. Uncomment it if you prefer!}
+An implementation example using the \numpyro\ library may be found in this companion notebook: \nblink{DES_Y1_SVI_and_NeutraReparam}.
+% Here is the simple way \numpyro\ deals with SVI initialisation and optimisation\footnote{See also listing in Appendix \ref{sec-DESY1}) where the \texttt{model} is described and the \texttt{cl\_obs} are the observed $C_\ell$.}
+% \begin{lstlisting}[language=iPython]
+% import numpyro.infer.autoguide as autoguide
+% from numpyro.infer import SVI, Trace_ELBO
+% from numpyro.optim import Adam
+% # choose a SVI guide 
+% guide = autoguide.AutoMultivariateNormal(model,
+%         init_loc_fn=numpyro.infer.init_to_median())
+% # SVI optimisation 
+% optimizer = numpyro.optim.Adam(1e-3)
+% svi = SVI(model_spl, guide,optimizer,loss=Trace_ELBO(num_particles=10))
+% svi_result = svi.run(jax.random.PRNGKey(0),20_000, cl_obs)
+% #To get samples from SVI approximated posterior 
+% samples = guide.sample_posterior(jax.random.PRNGKey(1), svi_result.params, sample_shape=(100_000,))
+% \end{lstlisting}
 %
-Once the optimisation is done on gets $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a MultiVariate Normal distribution (MVN) and a Block Nueral Autoregressive Flow (B-NAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The reader can have a glance to the following notebook \nblink{DES_Y1_SVI_and_NeutraReparam}. Concerning the B-NAF architecture it is composed of  a single flow using a block autoregressive structure with 2 hidden layers of 8 units each. The SVI optimization has been performed with the Adam optimizer \citep{KingmaB14} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 (30,000) steps to ensure a stable ELBO loss convergence when using the B-NAF (MVN) guides, and no tuning of the optimizer has been undertaken as for instance a learning rate scheduling. It takes about 2 or 3 hours on the NVidia V100 GPU scaling according to the number of steps.  \FrL{Arf... 2 hours !} 
+Once the optimisation is done one can obtain  i.i.d. $z$ samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a MultiVariate Normal distribution (MVN) and a Block Nueral Autoregressive Flow (B-NAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The B-NAF architecture is composed of a single flow using a block autoregressive structure with 2 hidden layers of 8 units each. The SVI optimization has been performed with the Adam optimizer \citep{KingmaB14} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 (30,000) steps to ensure a stable ELBO loss convergence when using the B-NAF (MVN) guides, and no tuning of the optimizer has been undertaken as for instance a learning rate scheduling. It takes about 2 or 3 hours on the NVidia V100 GPU scaling according to the number of steps.  
 
-In the figure \ref{fig_cobaya_SVIs}, we compare the contours obtained with \texttt{Cobaya} as in figure \ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and B-NAF guided SVI.  As mentioned in \cite{NEURIPS2020_7cac11e2} one challenge with variational inference is assessing how close the variational approximation $q(z,\lambda^\ast)$ is to the true posterior distribution. It is not in the scope of this article to elaborate a statistical diagnostics, rather we show that both guided SVI exhibit rather similar contours and both estimate are close to the Cobaya posterior sampling. The difference is that these SVI approximate posteriors have been obtained in a short time and these posterior estimates can serve as front-end to a NUTS sampler as described in the next section. 
+In figure \ref{fig_cobaya_SVIs}, we compare the contours obtained with \texttt{Cobaya} (as in figure \ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and B-NAF guided SVI.  As noted in \cite{NEURIPS2020_7cac11e2} one challenge with variational inference is assessing how close the variational approximation $q(z,\lambda^\ast)$ is to the true posterior distribution. It is not in the scope of this article to elaborate a statistical diagnosis; rather we show that both guided SVI exhibit rather similar contours and both estimate are close to the Cobaya posterior sampling. The difference is that these SVI approximate posteriors have been obtained in a much shorter time, and can serve as starting point for a NUTS sampler as described in the next section. 
 %
 \begin{figure*}
 \centering
@@ -929,51 +930,41 @@ In the figure \ref{fig_cobaya_SVIs}, we compare the contours obtained with \text
 \subsubsection{Neural Transport}
 \label{sec-Neural-Reparametrisation}
 %
-If the SVI method can be used as is to get $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution as shown on the previous section, the \textit{Neural Transport MCMC} method \citep{Parno2018,2019arXiv190303704H} is an efficient way to boost HMC efficiency, especially in target distribution unfavourable geometry where for instance the leapfrog integration algorithm has to face squeezed join distributions for a subset of variables. From SVI, one obtains a first approximation of the target distribution and we show that the change-of-variable $z=F_\lambda(\zeta)$ (eg. $F_\lambda=T^{-1}\circ S^{-1}_\lambda$) is such that
+If the SVI method can be used as is to get $z$ i.i.d. samples from the $q(z,\lambda^\ast)$ distribution as shown on the previous section, the \textit{Neural Transport MCMC} method \citep{Parno2018,2019arXiv190303704H} is an efficient way to boost HMC efficiency, especially in target distribution with unfavourable geometry where for instance the leapfrog integration algorithm has to face squeezed join distributions for a subset of variables. From SVI, one obtains a first approximation of the target distribution, and this approximation is used to choose a better transform $T$ to map the parameter space to a more convenient one $z=F_\lambda(\zeta)$ (eg. $F_\lambda=T^{-1}\circ S^{-1}_\lambda$) is such that
 \begin{equation}
 q(z;\lambda) \rightarrow q(\zeta;\lambda) \bydef q(F_\lambda(\zeta)) |J_{F_\lambda}(\zeta)|
 \end{equation}
-which is evaluated with optimal $\lambda^\ast$ according to maximization of the ELBO. So, one can use a HMC sampler (eg. NUTS) based on $p(\zeta;\mathcal{D})$ distribution, initialized with $\zeta$ samples from $q(\zeta;\lambda^\ast)$, to get a Markov Chain of $N$ samples $(\zeta_i)_{i<N}$. Then, from the transformation  $z_i=F_{\lambda^\ast}(\zeta_i)$ one finally obtain a Marcov Chain with $(z_i)_{i<N}$ samples. 
+where $F_\lambda$ with the optimal $\lambda^\ast$ maps the best-fitting $q(z;\lambda^\ast)$ to a geometrically simple function like a unit multivariate normal distribution.  So, one can use a HMC sampler (eg. NUTS) based on $p(\zeta;\mathcal{D})$ distribution, initialized with $\zeta$ samples from $q(\zeta;\lambda^\ast)$, to get a Markov Chain of $N$ samples $(\zeta_i)_{i<N}$. Then, from the transformation  $z_i=F_{\lambda^\ast}(\zeta_i)$ one finally obtain a Markov Chain with $(z_i)_{i<N}$ samples. % We provide a notebook illustrating this process: \nblink{DES_Y1_SVI_and_NeutraReparam}.
 \begin{figure*}
 \centering
 \includegraphics[width=1.5\columnwidth]{figures/fig_Cobaya-NUTS-SVI200_bis_v1.pdf}
 \caption{Same configuration as in Figure \ref{fig_cobaya_NUTS_SVI} but for the highly correlated five lens galaxy bias.}
 \label{fig_cobaya_NUTS_SVI_bis}
 \end{figure*}
-The \textit{Neural Transport} is accessible throw the  \verb|NeuTraReparam| in \numpyro\ library as follows (See the notebook \nblink{DES_Y1_SVI_and_NeutraReparam}):
-\begin{lstlisting}[language=iPython]
-from numpyro.infer.reparam import NeuTraReparam
-# Reparametrisation of model to feed NUTS sampler
-neutra = NeuTraReparam(guide, svi_result.params)
-neutra_model = neutra.reparam(model_spl) 
-\end{lstlisting}
-%
-We have used the MVN guided SVI described in the previous section. The NUTS sampler has run 1 chain of 200 samples (``low'' schema), 1 chain with 1000 samples and 10 chains  with 1000 samples each (each setup starts all chains with 200 samples for initialisation). All NUTS sampling as been performed with dense mass matrix optimisation without special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapse time for each of the 3 setups is 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the ``low'' schema results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}  to be compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. Notice the good results even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.  
 
-Results in terms of sampling efficiency are shown on Table~\ref{tab-ESS-NUTS_SVI-1} showing that the SVI followed by Neutral Transport gives high efficiency at low number of samples which is quite interesting to ease the model development in its early phase.
+% \JZ{Deleted code snippet again, but please reinstate if you prefer}.
+% The core process is straightforwardly implemented in \numpyro\:
+% \begin{lstlisting}[language=iPython]
+% from numpyro.infer.reparam import NeuTraReparam
+% # Reparametrisation of model to feed NUTS sampler
+% neutra = NeuTraReparam(guide, svi_result.params)
+% neutra_model = neutra.reparam(model_spl) 
+% \end{lstlisting}
+%
+We have used the MVN guided SVI described in the previous section on the same DES-Y1 analysis described above. The NUTS sampler was run using 1 chain of 200 samples (a fast configuration), one chain with 1000 samples and a set of ten chains with 1000 samples each combined into a single run of 10,000 samples (each setup began all chains with 200 samples for initialisation). All NUTS sampling was performed with dense mass matrix optimisation without the special block structuring and with \texttt{max\_tree\_depth=5} which is different than the default NUTS setting described in section \ref{sec-NUTS}. The elapsed time for each of the 3 setups was 50 minutes, 150 minutes and 5 hours, respectively. Naturally, more samples lead to better contour precision. But what is illustrative is the fast configuration results as shown in the Figures \ref{fig_cobaya_NUTS_SVI} and \ref{fig_cobaya_NUTS_SVI_bis}, compared to \texttt{Cobaya} and NUTS results presented in section \ref{sec-NUTS}. The results are good even for the highly correlated lens bias parameters. It is noticeable that running NUTS with the same settings  but without the SVI Neural Transport phase has demonstrated a rather poor behaviour with only 200 samples.
+
+Results in terms of sampling efficiency are shown in Table~\ref{tab-ESS-NUTS_SVI-1}. SVI followed by Neutral Transport gives high efficiency at low number of samples which may be particularly useful during early phases of model development.
 %
 \subsection{Sampling efficiency}
 \label{sec-results}
-%
-To a large extend looking at results of Table~\ref{tab-ESS-NUTS_SVI-1}, the key question is: what is the HMC/NUTS gain compared to the well known highly optimized \texttt{Cobaya} sampler? 
-In one hand, one may argue considering the elapse time of execution that the number of efficient samples per model call is a right metric to consider: 
-\begin{equation}
-    \eta = \frac{n_{eff}}{\#\ of\ calls} = \frac{N_s \times \varepsilon}{N_s \times n_{steps}} = \frac{\varepsilon}{n_{steps}}
-\end{equation}
-with $N_s$ the total number of samples, $\varepsilon$ the effective sampler efficiency  and $n_{steps}$ the number of steps (calls) per sample generation. Then, for \texttt{Cobaya} one roughly gets $\varepsilon\approx 3\%$ with $n_{steps}=1$ while for the NUTS sampler $\varepsilon\approx 50\%$ but at the expense of $n_{steps}=2^5$ or more. At the end of the day after tuning generation parameters, the $\eta$ values for both methods would certainly be comparable (ie. about $1\%$). So, at first sight one may conclude that there is no gain to use HMC/NUTS compared to standard MCMC sampler.  
-
-On the other hand, the above metric is may be too crude to cover all aspects of the sample generation. One should probably have in mind that the low sampling efficiency of standard MCMC sampler requires mobilizing a large amount of resources to produce a sufficient large sample batch in a reasonable time scale, ie. several days on dedicated infrastructure. Moreover, the user is faced to the dilemma to perform or not a statistical sample selection post-processing as \textit{thinning} beyond the \textit{burn-in removal} which is a rather delicate procedure and time consuming too, needing how-know to be conducted correctly \citep{doi:10.1146/annurev-statistics-040220-091727, Owen2017}. 
-
-So, the authors think that it is worth considering methods like HMC/NUTS that by construction are more efficient. Moreover, using SVI with neural reparametrisation offers an effective way to undertake a progressive validation of the model with rather modest sample set (eg. starting with 200 samples) producing good enough marginal contours in few hours. In practice, this validation phase can save time before producing sizeable batch for final analysis. The authors have not investigated very high dimensional ($O(10^2)$ parameters) as well as multi-modal analysis, but the key argument in favour of HMC/NUTS sampling is that it exploit the geometry of the typical set of the posterior distribution contrary to the standard random walk of Metropolis-Hasting sampling. Furthermore, using reparametrisation  one can adapt to poor geometry cases (eg. \cite{2019arXiv190303704H}).
-%
 \begin{table}[htb]
-\caption{Results of the \textit{relative effective sample size} (aka ESS, ``bulk'') in percent computed by the \texttt{Arviz} library \citep{arviz_2019}. The ESS can be larger than 100\% in some cases. 
+\caption{The \textit{relative effective sample size} (ESS) in percent computed by the \texttt{Arviz} library \citep{arviz_2019} from: 
 %{\color{red} 
 %(0) "F.L run" are computed from NUTS sampler with 16 %parallel chains of 1,000 samples each and 200 warm-up %and \texttt{max\_tree\_depth=7} (see text) The numbers %are from \texttt{n\_eff/16,000};
 %}
-(a): results from Cobaya 70,000 samples;
-(b): results from NUTS sampler with 16 chains of 1,000 samples each and 200 warm-up and \texttt{max\_tree\_depth=7} (Section~\ref{sec-NUTS}); 
-(c) are the results of SVI Multivariate Normal followed by NUTS and Neural Transform  with 1 chain of 200 samples and 200 warm-up (Section~\ref{sec-Neural-Reparametrisation}).}
+(a): Cobaya 70,000 samples;
+(b): NUTS sampler with 16 chains of 1,000 samples each and 200 warm-up and \texttt{max\_tree\_depth=7} (Section~\ref{sec-NUTS}); 
+(c) SVI Multivariate Normal followed by NUTS and Neural Transform  with one chain of 200 samples and 200 warm-up. The ESS can be larger than 100\% in some cases.  (Section~\ref{sec-Neural-Reparametrisation}).}
 \label{tab-ESS-NUTS_SVI-1}
  \centering
 \begin{tabular}{ccccccccccc}
@@ -987,34 +978,51 @@ So, the authors think that it is worth considering methods like HMC/NUTS that by
 \end{tabular}
 \end{table}
 %
+Looking at the results of Table~\ref{tab-ESS-NUTS_SVI-1}, a key question is: what is the HMC/NUTS gain compared to the highly optimized \texttt{Cobaya} sampler? 
+One useful metric is the number of effective samples per model evaluation:
+\begin{equation}
+    \eta = \frac{n_\mathrm{eff}}{n_\mathrm{eval}} = \frac{N_s \times \varepsilon}{N_s \times n_\mathrm{step}} = \frac{\varepsilon}{n_\mathrm{step}}
+\end{equation}
+with $N_s$ the total number of samples, $\varepsilon$ the effective sampler efficiency  and $n_\mathrm{step}$ the number of steps (calls) per generated sample. For \texttt{Cobaya} we find $\varepsilon\approx 3\%$ with $n_\mathrm{step}=1$ while for the NUTS sampler $\varepsilon\approx 50\%$ but at the expense of $n_\mathrm{step}=2^5$ or more. With better tuning of the sampling parameters we would expect the $\eta$ values for both methods would to become more comparable, but at this intermediate dimensionality the gain from HMC/NUTS compared to standard MCMC sampler. The power of these approaches will become most evident at higher dimensionality still, such has when marginalizing over increasingly complex systematic models. NUTS also makes post-processing simpler, since samples are nearly uncorrelated, removing the need for a \textit{thinning} step, which is a rather delicate procedure, needing how-know to be conducted correctly \citep{doi:10.1146/annurev-statistics-040220-091727, Owen2017}.
+
+% The $\eta$ metric is may be too crude, though, to cover all aspects of the sample generation. \JZ{I don't understand the next point. Doesn't the HMC/NUTS take a long time too on dedicated resources?} One should probably have in mind that the low sampling efficiency of a standard MCMC sampler requires mobilizing a large amount of resources to produce a sufficient large sample batch in a reasonable time scale, ie. several days on dedicated infrastructure.  %\JZ{I think you need to remove the burn-in when using NUTS too?}.
+
+
+As the dimensionality of cosmological models increases, methods like HMC/NUTS that by construction are more efficient will become increasingly important. Moreover, using SVI with neural reparametrisation offers an effective way to undertake a progressive validation of a model with rather modest sample set (eg. starting with 200 samples) producing good enough marginal contours in few hours. In practice, this validation phase can save time before producing sizeable batch for final analysis. The authors have not investigated higher dimensional ($O(10^2)$ parameters) or multi-modal problems, but the key argument in favour of HMC/NUTS sampling is that it exploits the geometry of the typical set of the posterior distribution automatically, unlike the standard random walk of Metropolis-Hasting sampling. Furthermore, using reparametrisation  one can adapt to poor geometry cases (eg. \cite{2019arXiv190303704H}).
+%
+
+%
 \section{General discussion}
 \label{sec-discussion}
 %
-Having demonstrated the interest of \jaxcosmo\ as a differentiable cosmology library library, we now discuss several limitations, and open questions.
+Having demonstrated the utility of \jaxcosmo\ as a differentiable cosmology library library, we now discuss several limitations, and open questions.
 
 %Lack of autodiff Boltzmann code (emulator)
-The first essential barrier to a full-fledged automatically differentiable cosmology library is the need for a differentiable Boltzmann solver to compute the matter power spectrum. At this stage, \jaxcosmo\ relies on the analytic Einsenstein \& Hu fitting formula, which is not accurate enough for Stage IV requirements, nor does it allow to explore beyond $\Lambda$CDM models. Existing solvers such as CLASS or CAMB \FrL{citations} are large and complex codes which are not easily reimplemented in an \autodiff\ framework and therefore cannot be directly integrated in \jaxcosmo\ . 
+The first essential barrier to a fully-fledged automatically differentiable cosmology library is the need for a differentiable Boltzmann solver to compute the CMB or matter power spectra. At this stage, \jaxcosmo\ relies on the analytic Einsenstein \& Hu fitting formula for the latter, which is not accurate enough for Stage IV requirements, and it does not include models beyond $\Lambda$CDM. Existing solvers such as CLASS or CAMB \citep{2011JCAP...07..034B,camb} are large and complex codes which are not easily reimplemented in an \autodiff\ framework and therefore cannot be directly integrated in \jaxcosmo\ .
 
-A first option to resolve this issue is to implement from scratch a new Boltzmann code in a framework that will support automatic differentiation. This is the approach behind works such as \FrL{the Julia code} which is provides a simplified Boltzmann solver in Julia, or \FrL{the code from our friends in Zurich} which is based on a SymPy and could be relatively easily compatible with JAX. However, even if very promising, both of these options thus far remain limited. While we do believe a automatically differentiable Boltzmann code is the best option, it seems that the cost of developing such a code remains very high at this time.
+A first option to resolve this issue would be to implement from scratch a new Boltzmann code in a framework that supports automatic differentiation. This is the approach behind works such as \texttt{Bolt.jl}\footnote{\url{https://github.com/xzackli/Bolt.jl}} which is provides a simplified Boltzmann solver in Julia, or PyCosmo \citep{pycosmo} which is based on a the SymPy symbolic mathematics library and could be relatively easily compatible with JAX. However, even if very promising, both of these options thus far remain limited. While we do believe a automatically differentiable Boltzmann code is the best option, it seems that the cost of developing such a code remains very high at this time.
 
-A second approach is to develop emulators of a full-fledged Boltzmann code. Emulators based on neural networks or Gaussian processes are themselves automatically differentiable with respect to cosmological parameters. In fact, the litterature is now rich in examples of such emulators \FrL{cite all emulators}. After validating their accuracy against the reference CAMB or CLASS implementation, they can be directly integrated as a plug-and-play replacement for the computation of the matter power spectrum. \FrL{need to talk about cosmopower somewhere.} At this time, it seems that using emulators will be the most straightforward approach to bring more accurate models to \jaxcosmo\ . \FrL{However, we want to emphasize that one of the reason for the wide diversity of emulators is a lack of standardization}.
+A second approach would be to develop emulators of a fully-fledged Boltzmann code. Emulators based on neural networks or Gaussian processes are themselves automatically differentiable with respect to cosmological parameters. In fact, the literature is now rich in examples of such emulators \citep[e.g.][and references therein]{emucmb, nygaard,cosmopower,cosmicnet}. After validating their accuracy against a reference CAMB or CLASS implementation, they could be directly integrated as a plug-and-play replacement for the computation of the matter power spectrum. At this time, it seems that using emulators will be the most straightforward approach to bring more accurate models to \jaxcosmo. We believe, though,  that one of the reason for the wide diversity in this is a lack of standardization - a unified interface and validation suite for such methods would provide a much simpler comparison between them and enable wider usage. \JZ{Francois - is this what you meant here? If not please edit. If Francois hasn't done this soon then just delete this comment.}
 
 \bigskip
+
 
 % Reasoning behind not making a full emulator of the correlation functions
-Connected to this discussion about emulators, one point that could be discussed is whether one even needs a library like \jaxcosmo\ if anyway one can build emulators of a CCL likelihood for use inside gradient-based inference algorithms. While this could indeed be feasible, and of similar cost as just making an emulator of the matter power spectrum, the drawback of this approach is that many analysis parameters and choices become hard coded in the emulator. While the model for the linear matter power spectrum is typically kept fixed in practical analyses, all the of the choices related in particular to systematics modeling (e.g. photometric redshift errors, galaxy bias, or intrinsic galaxy alignments) are very likely to vary significantly in the process of developing the analysis. Building an emulator for the likelihood would mean the emulator needs to be retrained everytime the likelihood is changed.
+Connected to this discussion about emulators, one point that could be discussed is whether one even needs a library like \jaxcosmo\ if anyway one can build emulators of a CCL likelihood for use inside gradient-based inference algorithms. While this could indeed be feasible, and of similar cost as just making an emulator of the matter power spectrum, the drawback of this approach is that many analysis parameters and choices become hard coded in the emulator. While the model for the linear matter power spectrum is typically kept fixed in practical analyses, all the of the choices related in particular to systematics modeling (e.g. photometric redshift errors, galaxy bias, or intrinsic galaxy alignments) will vary significantly in the process of developing the analysis. Building an emulator for the likelihood would mean the emulator needs to be retrained every time the likelihood is changed.
 
 \bigskip
+
 
 %  - Massively Parallel MCMC on GPU (linked to vmap and/or pmap)
 %  - Efficiency of gradient-based inference methods
-Another aspect worth discussing are the prospects for scaling up and speeding up cosmological inference in practice given tools such as \jaxcosmo\ . As we illustrated in the previous section, gradient-based inference techniques yield significantly less correlated MCMC chains.\FrL{Hummm here I guess we want to say also it scales better with dimensions, and that you can get very fast first results.} \FrL{we also want to say that the GPU parallelisation is going to change the game, all the more when you account for new massive GPU machines.}
+Another aspect worth discussing are the prospects for scaling up and speeding up cosmological inference in practice given tools such as \jaxcosmo. As we illustrated in the previous section, gradient-based inference techniques yield significantly less correlated MCMC chains, scale better than any other known sampling method as dimension increases, and can provide very fast approximate posteriors if needed. \jaxcosmo\  is also well suited to aid in the parallelization of likelihoods and algorithms, especially on multiple GPUs, which will become increasingly important as the high-performance computing landscape evolves.
+
 
 
 \bigskip
 
 %  - Respective role of CCL and jax-cosmo
-Finally, one question worth asking is how does \jaxcosmo\ position itself against classical codes such as CCL? Or in other terms, will it replace CCL? While we are convinced of the benefits of a JAX implementation, we expect CCL to remain extremely valuable as the reference cosmology implementation. \FrL{it allows to leverage the legacy codes, has a lot more features, etc.} Ultimately, a natural transition may occur towards more modern frameworks like \jaxcosmo\ when they reach the ability to run full-fledged Stage IV likelihoods.
+Finally, one question worth asking is how does \jaxcosmo\ position itself against classical codes such as CCL?  While we are convinced of the benefits of a JAX implementation, we expect CCL and other key codes to remain critical as standard cosmology implementations.  Ultimately, a natural transition may occur towards differentiable frameworks like \jaxcosmo\ when they reach the ability to run full-fledged Stage IV likelihoods.
 
 
 \section{Conclusions \& Prospects}
@@ -1025,42 +1033,24 @@ Finally, one question worth asking is how does \jaxcosmo\ position itself agains
 %- We have demonstrated the efficiency in JC of the derivative-aware MCMC methods HMC and NUTS, which are regarded as the only way for samplers to evade the curse of dimensionality up to the hundreds of dimensions we are likely to need for the next generation of surveys.
 %- We have shown a proof-of-concept for the use of JC with machine learning methods, opening a whole new space of methods in cosmology.
 
-In this paper, we have presented \jaxcosmo\ a cosmology library implemented in the JAX framework, enabling the automatic computation of the derivatives of cosmological likelihoods with respect to their parameters, as well as greatly speeding up likelihood evaluations thanks to automatic parallelisation and just in time compilation on GPUs. Currently, \jaxcosmo\ only contains a small set of features limited corresponding to a DES-Y1 3x2pt analysis. Being an open source project, contribution of additional features is additional areas such as CMB or spectroscopic galaxy clustering are warmly welcome. 
+In this paper, we have presented \jaxcosmo, a cosmology library implemented in the JAX framework that enables the automatic computation of the derivatives of cosmological likelihoods with respect to their parameters, and greatly speeds up likelihood evaluations thanks to automatic parallelisation and just-in-time compilation on GPUs. Currently, \jaxcosmo\ only contains a small set of features corresponding to a DES-Y1 3x2pt analysis. Being an open source project, contributions of additional features is additional areas such as CMB or spectroscopic galaxy clustering are warmly welcome. 
 
-To demonstrate the interest of an automatically differentiable library, we have illustrated on concrete examples how Fisher matrices, which are notoriously difficult to compute and require extensive and careful fine tuning, can now be computed robustly and at much lower cost. In addition, Fisher matrices becomes themselves differentiable, which allows for  Figure of Merit optimization by gradient descent, making survey optimization extremely simple. 
+To demonstrate the value of an automatically differentiable library, we have illustrated with concrete examples how Fisher matrices, which are notoriously unstable and require extensive and careful fine tuning, can now be computed robustly and at much lower cost. In addition, Fisher matrices becomes themselves differentiable, which allows for  Figure of Merit optimization by gradient descent, making survey optimization extremely simple. 
 
-Going beyond Fisher forecasts, we have also compared to simple Metropolis-Hastings several gradient-based inference techniques (namely, Hamiltonian Monte-Carlo, No-U-Turn-Sampler, Stochastic Variational Inference). We show that the posterior samples with gradient-based methods have a much larger Effective Sample Size, meaning that \FrL{let's think a bit more about interpretation here.... the thing I care about is not as much the ESS, but the number of likelihood evaluation per independent sample. I don't think we have quantified that too much}. These inference techniques can scale to hundreds of dimensions, and may become necessary in Stage IV analysis as the number of nuisance parameters is likely to become very large.
+Going beyond Fisher forecasts, we have also compared simple Metropolis-Hastings to several gradient-based inference techniques (Hamiltonian Monte-Carlo, No-U-Turn-Sampler, and Stochastic Variational Inference). We show that the posterior samples with gradient-based methods can reproduce classic methods very efficiently, and can provide approximate posteriors very rapidly. These inference techniques can scale to hundreds of dimensions, and may become necessary in Stage IV analysis as the number of nuisance parameters is likely to become very large.
 
-
-\bigskip
-
-The next extensions of this framework will be the inclusion of additional cosmological probes, as well as integrating emulators for the matter power spectrum trained on CAMB or CLASS, as a means to go beyond the current analytic Eisenstein \& Hu model.
-
-
-\bigskip
+The next extensions of this framework will be the inclusion of additional cosmological probes, as well as the integration of emulators for the matter power spectrum trained on CAMB or CLASS, as a means to go beyond the current analytic Eisenstein \& Hu model.
 
 In the spirit of reproducible research, all results presented in this paper can be reproduced from the following GitHub repository:
-
-%\FrL{add link}\JEC{Verif if all the nb listed are there, and if some have to be withdrawn. } 
 
 \url{https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper/}
 
 
 
-%
-%
-%
-%\subsection{Efficient sampling in high dimensions with Hamiltonian Monte Carlo}
-%
-%%
-%%
-%\subsection{DES-Y1 Example}
-%
-
 %%%
-\section*{CRediT authorship contribution statement}
-\textbf{J.E Campagne} Conceptualization, Methodology, Software, Validation, Writing.
-\textbf{F. Lanusse}, \textbf{J. Zuntz}...
+\section*{CRedit authorship contribution statement}
+\textbf{J.E Campagne:} Conceptualization, Methodology, Software, Validation, Writing, Visualization.
+\textbf{F. Lanusse:}, Conceptualization, Methodology, Software, Validation, Writing, Project administration \textbf{J. Zuntz:} Investigation, Writing.
 
 %\section*{Declaration of Competing Interest}
 %The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
@@ -1072,21 +1062,22 @@ Some of the numerical experiments have been conducted at the IN2P3 Computing Cen
 
 %% The Appendices part is started with the command \appendix;
 %% appendix sections are then done as normal sections
-\appendix
+%\appendix
+% JEC no more useful
+%\section{SVI example with MVN guide}
+%\label{app-SVI_MVN}
+%Let us illustrate the \textit{elliptical standardisation} described in section \ref{sec-SVI} in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (i.e. an MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). The  function $S_\lambda$ which transforms the parameters as $S_\lambda(\xi)=\zeta$ is given here by  $S_\lambda(\xi) = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (by volume conservation), so the cost function reads
+%\begin{multline}
+%-\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
+%\label{eq-loss-svi-3b}
+%\end{multline}
 
-
-
-\section{SVI example with MVN guide}
-\label{app-SVI_MVN}
-Let us illustrate the \textit{elliptical standardisation} described in section \ref{sec-SVI} in the case where $q(\xi; \lambda) = \mathcal{N}(\xi; \mu, \Sigma)$ (ie. a MVN distribution with the parameters $\lambda=(\mu, \Sigma)$). One defines $S_\lambda$ such that $S_\lambda(\xi)=\zeta$, eg. $\zeta = L^{-1}(\xi-\mu)$ where $L$ is the Cholesky decomposition of $\Sigma=LL^T$. The Jacobian of this distribution is 1 (volume conservation), so the cost function reads
-\begin{multline}
--\mathcal{L}(\lambda) = \underbrace{\mathbb{E}_{\zeta\sim \mathcal{N}(0,I)}\left[ \log p(T^{-1}(S_\lambda^{-1}(\zeta)),\mathcal{D}) + \log |J_{T^{-1}}(S_\lambda^{-1}(\zeta))| \right]}_{model} \\ + \underbrace{\mathbb{H}[q(\xi;\lambda)]}_{guide}
-\label{eq-loss-svi-3b}
-\end{multline}
-where $\mathbb{H}(q)$ is the Shannon entropy of the $q$ distribution which is independent of the model, so its gradient can be computed once for all and reused in any user model. In case of the MVN for completeness  $\nabla_\mu \mathbb{H}(q)=0$, $\nabla_L \mathbb{H}(q)=(L^{-1})^T$ while the other gradients are computed by the JAX \texttt{autodiff} mechanism.
+%In case of the MVN  $\nabla_\mu \mathbb{H}(q)=0$, $\nabla_L \mathbb{H}(q)=(L^{-1})^T$ while the other gradients are computed by the JAX \texttt{autodiff} mechanism.
 %\FrL{Yeah. this is way TMI, and also goes against the idea that with autodiff we don't need to manually work out all these details.} 
 
-The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution which reveals the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX.
+%The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution, hence the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
 %% If you have bibdatabase file and want bibtex to generate the
 %% bibitems, please use
 %%
