@@ -1,3 +1,19 @@
+@article{Gunther_2022,
+doi = {10.1088/1475-7516/2022/11/035},
+url = {https://dx.doi.org/10.1088/1475-7516/2022/11/035},
+year = {2022},
+month = {nov},
+publisher = {IOP Publishing},
+volume = {2022},
+number = {11},
+pages = {035},
+author = {Sven Günther and Julien Lesgourgues and Georgios Samaras and Nils Schöneberg and Florian Stadtmann and Christian Fidler and Jesús Torrado},
+title = {CosmicNet II: emulating extended cosmologies with efficient and accurate neural networks},
+journal = {Journal of Cosmology and Astroparticle Physics},
+abstract = {In modern analysis pipelines, Einstein-Boltzmann Solvers (EBSs) are an invaluable tool for obtaining CMB and matter power spectra.  To significantly accelerate the computation of these observables, the CosmicNet strategy is to replace the usual bottleneck of an EBS, which is the integration of a system of differential equations for linear cosmological perturbations, by trained neural networks. This strategy offers several advantages compared to the direct emulation of the final observables, including very small networks that are easy to train in high-dimensional parameter spaces, and which do not depend by construction on primordial spectrum parameters nor observation-related quantities such as selection functions. In this second CosmicNet paper, we present a more efficient set of networks that are already trained for extended cosmologies beyond ΛCDM, with massive neutrinos, extra relativistic degrees of freedom, spatial curvature, and dynamical dark energy. We publicly release a new branch of the class code, called classnet, which automatically uses networks within a region of trusted accuracy. We demonstrate the accuracy and performance of classnet by presenting several parameter inference runs from Planck, BAO and supernovae data, performed with classnet and the cobaya inference package.  We have eliminated the perturbation module as a bottleneck of the EBS, with a speedup that is even more remarkable in extended cosmologies, where the usual approach would have been more expensive while the network's performance remains the same. We obtain a speedup factor of order 150 for the emulated perturbation module of class. For the whole code, this translates into an overall speedup factor of order 3 when computing CMB harmonic spectra (now dominated by the highly parallelizable and further optimizable line-of-sight integration), and of order 50 when computing matter power spectra (less than 0.1 seconds even in extended cosmologies).}
+}
+
+
 @article{Parno2018,
 author = {Parno, Matthew D. and Marzouk, Youssef M.},
 title = {Transport Map Accelerated Markov Chain Monte Carlo},
@@ -41,7 +57,9 @@ doi = {https://doi.org/10.1002/widm.1305},
 url = {https://wires.onlinelibrary.wiley.com/doi/abs/10.1002/widm.1305},
 eprint = {https://wires.onlinelibrary.wiley.com/doi/pdf/10.1002/widm.1305},
 abstract = {Derivatives play a critical role in computational statistics, examples being Bayesian inference using Hamiltonian Monte Carlo sampling and the training of neural networks. Automatic differentiation (AD) is a powerful tool to automate the calculation of derivatives and is preferable to more traditional methods, especially when differentiating complex algorithms and mathematical functions. The implementation of AD, however, requires some care to insure efficiency. Modern differentiation packages deploy a broad range of computational techniques to improve applicability, run time, and memory management. Among these techniques are operation overloading, region-based memory, and expression templates. There also exist several mathematical techniques which can yield high performance gains when applied to complex algorithms. For example, semi-analytical derivatives can reduce by orders of magnitude the runtime required to numerically solve and differentiate an algebraic equation. Open and practical problems include the extension of current packages to provide more specialized routines, and finding optimal methods to perform higher-order differentiation. This article is categorized under: Algorithmic Development > Scalable Statistical Methods},
-year = {2019}
+year = {2019},
+eid = {arXiv:1811.05031},
+archivePrefix = {arXiv},
 }
 
 
