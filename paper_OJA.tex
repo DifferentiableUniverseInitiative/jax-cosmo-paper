@@ -187,9 +187,9 @@ J. Zuntz$^3$,\\
 \begin{abstract}
 
 
-We present \jaxcosmo, a library for differentiable cosmological theory calculations. \jaxcosmo\ uses the recent JAX library, which has created a new coding ecosystem, especially in probabilistic programming.
+We present \jaxcosmo, a library for differentiable cosmological theory calculations. \jaxcosmo\ uses the recent \texttt{JAX} library, which has created a new coding ecosystem, especially in probabilistic programming.
 %
-As well as batch acceleration, just-in-time compilation, and automatic optimization of code for different hardware modalities (CPU, GPU, TPU), JAX exposes an \textit{automatic differentiation} (AD) mechanism. AD can take a Python function that uses JAX and return its (vector) derivative, computed not with finite differences but by successively differentiating each instruction in turn. This gives us the opportunity to apply a range of powerful Bayesian inference algorithms, otherwise impractical in cosmology, such as Hamiltonian Monte Carlo and Variational Inference. 
+As well as batch acceleration, just-in-time compilation, and automatic optimization of code for different hardware modalities (CPU, GPU, TPU), \texttt{JAX} exposes an \textit{automatic differentiation} (AD) mechanism. AD can take a Python function that uses \texttt{JAX} and return its (vector) derivative, computed not with finite differences but by successively differentiating each instruction in turn. This gives us the opportunity to apply a range of powerful Bayesian inference algorithms, otherwise impractical in cosmology, such as Hamiltonian Monte Carlo and Variational Inference. 
 %
 \jaxcosmo\ implements background evolution, linear and non-linear power spectra (using \texttt{halofit} or the Eisenstein and Hu transfer function), as well as angular power spectra ($C_\ell$) with the Limber approximation for galaxy and weak lensing probes, all differentiable with respect to the cosmological parameters and their other inputs. 
 %
@@ -198,7 +198,7 @@ We discuss algorithms made possible by this library, and present comparisons wit
 We show that clear improvements are possible using HMC compared to Metropolis-Hasting, and that Normalizing Flows using the Neural Transport are a promising methodology.
 
 
-% The recent JAX library has created a new ecosystem from which probabilistic programming software can take enormous benefit: batch acceleration, just-in-time compilation, and automatic optimization of code for different hardware modalities (CPU, GPU, TPU) can provide huge speed-ups to a wide range of different problems. In particular, JAX exposes an \textit{automatic differentiation} mechanism, which can take a python function that uses JAX and return its (vector) derivative.  This gives us the opportunity to apply a range of powerful but otherwise unfeasible algorithms used in Bayesian inference, such as Hamiltonian Monte Carlo (HMC) and Variational Inference. 
+% The recent \texttt{JAX} library has created a new ecosystem from which probabilistic programming software can take enormous benefit: batch acceleration, just-in-time compilation, and automatic optimization of code for different hardware modalities (CPU, GPU, TPU) can provide huge speed-ups to a wide range of different problems. In particular, \texttt{JAX} exposes an \textit{automatic differentiation} mechanism, which can take a python function that uses \texttt{JAX} and return its (vector) derivative.  This gives us the opportunity to apply a range of powerful but otherwise unfeasible algorithms used in Bayesian inference, such as Hamiltonian Monte Carlo (HMC) and Variational Inference. 
 
 % To take advantage of these possibilities within cosmology we have developed the \jaxcosmo\ library, which implements background evolution, linear and non linear power spectra (using \texttt{halofit} or the Eisenstein and Hu transfer function), as well as angular power spectra ($C_\ell$) with the Limber approximation for galaxy and weak lensing probes. We discuss algorithms made possible by this library, and present comparisons with the Core Cosmology Library as a benchmark, and run a series of tests using the Dark Energy Survey Year 1 3x2pt analysis with the \numpyro\ library to demonstrate practical usage. 
 % We show that clear improvements are possible using HMC compared to Metropolis-Hasting, and that the Normalizing Flows using the Neural Transport is a promising methodology.
@@ -232,7 +232,7 @@ While these tools have especially been applied to neural network optimization an
 A recent entrant to this field is the \texttt{JAX} library\footnote{\url{https://jax.readthedocs.io}} \citep{jax2018github} which has undergone rapid development and can automatically differentiate native \texttt{Python} and \texttt{NumPy} functions, offering a speed up to the development process and indeed code runtimes. \texttt{JAX} offers an easy parallelization mechanism (\texttt{vmap}), and just-in-time compilation (\texttt{jit}) and optimization targetting CPU, GPU and TPU hardware thanks to the \texttt{XLA} library that powers TensorFlow. These attractive features have driven wide adoption of \texttt{JAX} in computational research, and motivate us to consider its usage in cosmology.
 
 \texttt{JAX} contains bespoke reimplementation of packages such as \texttt{jax.numpy} and \texttt{jax.scipy}, as well as example libraries as \texttt{Stax} for simple but flexible neural network development. It has formed the seed for a wider ecosystem of packages, including, for example: 
-\texttt{Flax} \citep{flax2020github} a high-performance neural network library, \texttt{JAXopt} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable collection of optimizers, \texttt{Optax} \citep{optax2020github} a gradient processing and optimization library, and \numpyro\ \citep{phan2019composable,bingham2019pyro}, a probabilistic programming language (PPL) that is used in this paper. Other PPL packages such as \texttt{PyMC} \citep{Salvatier2016} have switched to JAX backend in recent versions\footnote{A more exhaustive list and rapidly growing list of packages can be found at \url{https://project-awesome.org/n2cholas/awesome-jax}}.
+\texttt{Flax} \citep{flax2020github} a high-performance neural network library, \texttt{JAXopt} \citep{jaxopt_implicit_diff} an hardware accelerated, batchable and differentiable collection of optimizers, \texttt{Optax} \citep{optax2020github} a gradient processing and optimization library, and \numpyro\ \citep{phan2019composable,bingham2019pyro}, a probabilistic programming language (PPL) that is used in this paper. Other PPL packages such as \texttt{PyMC} \citep{Salvatier2016} have switched to \texttt{JAX} backend in recent versions\footnote{A more exhaustive list and rapidly growing list of packages can be found at \url{https://project-awesome.org/n2cholas/awesome-jax}}.
 
 % I don't think we need all these URLs, it's getting excessive, especially when they have papers:
 %\footnote{\url{https://flax.readthedocs.io/}}
@@ -245,34 +245,27 @@ A recent entrant to this field is the \texttt{JAX} library\footnote{\url{https:/
 % \footnote{\url{https://pytorch.org/docs/}}
 % \footnote{\url{https://mc-stan.org/users/documentation}}
 
-In this context we have developed the open source \jaxcosmo\ library\footnote{\url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}}, which we present in this paper. The package represents a first step in making the powerful features described above useful for cosmology; it implements a selection of theory predictions for key cosmology observables as differentiable JAX functions.
+In this context we have developed the open source \jaxcosmo\ library\footnote{\url{https://github.com/DifferentiableUniverseInitiative/jax_cosmo}}, which we present in this paper. The package represents a first step in making the powerful features described above useful for cosmology; it implements a selection of theory predictions for key cosmology observables as differentiable \texttt{JAX} functions.
 
 
 We give an overview of the code's design and contents in Section~\ref{sec-jaxcosmo-design}. We show how to use it for rapid and numerically stable Fisher forecasts in Section~\ref{sec-fisher-forecast}, in more complete gradient-based cosmological inference with variants of Hamiltonian Monte Carlo and its variant No-U-Turn, and ML-accelerated Stochastic Variational Inference in Section~\ref{sec:chmc}. We discuss and compare these methods in Section~\ref{sec-results} and conclude in Section~\ref{sec-conclusion}.
 
 
 
-\section{JAX: Autograd meets XLA}
+\section{JAX: GPU Accelerated and Automatically Differentiable Python Programming}
 \label{sec-primer}
 
-The aim of this session is to provide a brief technical primer on JAX, necessary to fully grasp the potential of a cosmology library implemented in this framework.
+The aim of this section is to provide a brief technical primer on \texttt{JAX}, necessary to fully grasp the potential of a cosmology library implemented in this framework.
 
 % Maybe a short history explaining what autograd and XLA are.
-\FrL{Add a short history of XLA and Autograd.}
+%\FrL{Add a short history of XLA and Autograd.} Or maybe not
 
+\paragraph{\textbf{Automatic Differentiation}} Traditionally, two different approaches have been used in cosmology to obtain derivatives of given numerical expressions. The first approach is to derive analytically the formula for the derivatives of interest \citep[e.g.][]{2013MNRAS.432..894J}, with or without the help of tools such as \texttt{Mathematica}\footnote{\url{https://www.wolfram.com/mathematica}.}. This is however only practical typically for simple analytical models.
+The second approach is to compute numerical derivatives by finite differences. This approach can be applied on black-box models of arbitrary complexity (from typical Boltzmann codes to cosmological simulations \citep{2020ApJS..250....2V}). However it is notoriously difficult to obtain stable derivatives by finite differences \citep[e.g.][]{2021arXiv210100298B, 2021A&A...649A..52Y}. In addition, their computational cost does not scale well with the number of parameters (a minimum of $(2N+1)$ model evaluations is typically required for $N$ parameters), making them impractical whenever derivatives are needed as part of outer iterative algorithm.
 
-\FrL{Is this too much information below? On the one hand I don't want to go too technical, on the other hand, we talk about stuff like jax.grad/hessian, JIT, and vmap in the rest of the paper, it feels like these concepts should be introduced somewhere first.}
+Automatic differentiation frameworks like \texttt{JAX} take a different approach. They trace the execution of a given model and decompose this trace into fundamental operations with known derivatives (e.g. the derivative of a multiplication operation is known). Then, by applying the chain rule formula, the computational graph for the derivatives (of any order) of the model can be built from the known derivatives of every elementary operations. A new function corresponding to the derivative of the original function is therefore built automatically for the user. We direct the interested reader to \cite{baydin2018automatic, Margossian2019} for in-depth introductions to automatic differentiation. 
 
-\paragraph{Automatic Differentiation} Traditionally, two different approaches have been used in cosmology to obtain derivatives of given numerical expressions.
-
-The first approach is to derive analytically the formula for the derivatives of interest \citep{2019A&A...625A..64J}%JEC: This reference should be validated by F.L
-, with or without the help of tools such as \texttt{Mathematica}\footnote{\url{https://www.wolfram.com/mathematica}.}. This is however only practical typically for simple analytical models.
-
-The second approach is to compute numerical derivatives by finite differences. This approach can be applied on black-box models of abitrary complexity (from Boltzmann codes \FrL{some citations} to cosmological simulations \FrL{some citations}). However it is notoriously difficult to obtain stable derivatives by finite differences \FrL{cite papers trying to do fisher}. In addition, their computational cost does not scale well with the number of parameters (a minimum of $(2N+1)$ model evaluations is typically required for $N$ parameters), making them completely impractical whenever derivatives are needed on the fly.\FrL{this last sentence is not great.}
-
-Automatic differentiation frameworks like JAX take a different approach. They trace the execution of a given model and decompose this trace into fundamental operations with known derivatives (e.g. the derivative of a multiplication operation is known). Then, by applying the chain rule formula, the computational graph for the derivatives (of any order) of the model can be built from the known derivatives of every elementary operations. A new function corresponding to the derivative of the original function is therefore built automatically for the user. We direct the interested reader to \FrL{a good reference} \cite{Margossian2019} for an in-depth introduction to automatic differentiation. 
-
-JAX provides in particular a number of operators (\texttt{jax.grad}, \texttt{jax.jacobian}, \texttt{jax.hessian}) which can compute derivatives of any function written in JAX.
+JAX provides in particular a number of operators (\texttt{jax.grad}, \texttt{jax.jacobian}, \texttt{jax.hessian}) which can compute derivatives of any function written in \texttt{JAX}.
 \begin{lstlisting}[language=iPython]
 # Let us define a simple function 
 def f(x):
@@ -285,12 +278,11 @@ df_dx = jax.grad(f)
 \textbf{Why is that interesting?} \autodiff\ makes it possible to obtain \textit{exact gradients of cosmological likelihoods} with respect to all input parameters at the cost of only 2 likelihood evaluations.
 
 
-\paragraph{Just In Time Compilation (JIT)} Despite its convenience and wide adoption in astrophysics, Python still suffers from slow execution times compared to fully compiled languages such as C/C++. One approach to mitigate these issues and make Python code fast is Just In Time compilation, which traces the execution of a given Python function the first time it is called, and compiles it into a fast executable (by-passing the Python interpreter), which can be transparently used in subsequent calls to this function. Compared to other strategies for speeding up Python code \FrL{cpython and such}, JIT allows the user to simply write plain Python code, and reap \FrL{spell check} the benefits of compiled code.
+\paragraph{\textbf{Just In Time Compilation (JIT)}} Despite its convenience and wide adoption in astrophysics, Python still suffers from slow execution times compared to fully compiled languages such as C/C++. One approach to mitigate these issues and make Python code fast is Just In Time compilation, which traces the execution of a given Python function the first time it is called, and compiles it into a fast executable (by-passing the Python interpreter), which can be transparently used in subsequent calls to this function. Compared to other strategies for speeding up Python code such as Cython, JIT allows the user to simply write plain Python code, and reap the benefits of compiled code.
 
-A number of libraries allowing for JIT have already been used in astrophysics, in particular Numba (ngmix), and \FrL{The JIT code developped by our friends in Zurich}. JAX stands out compared to these other frameworks in that it relies on the highly optimized XLA library \FrL{citation} for executing the compiled expressions. XLA is continuously developed by Google as part of the TensorFlow project, for efficient training and inference of large scale deep learning applications, and as such supports computational backends such as GPU an TPU clusters.
-\FrL{Maybe we want to say why GPU is such a good idea for our use cases.}
+A number of libraries allowing for JIT have already been used in astrophysics, in particular Numba\footnote{\url{https://numba.pydata.org/}}, or the HOPE library \cite{2015A&C....10....1A} developed specifically for the need of astrophysics. \texttt{JAX} stands out compared to these other frameworks in that it relies on the highly optimized XLA library\footnote{\url{https://www.tensorflow.org/xla}} for executing the compiled expressions. XLA is continuously developed by Google as part of the TensorFlow project, for efficient training and inference of large scale deep learning applications, and as such supports computational backends such as GPU an Tensor Processing Units (TPU) clusters. The ability to perform computations directly on GPUs through XLA is one of the major benefits of \texttt{JAX}, as speed-ups of at least two orders of magnitudes can be expected for typical parallel linear algebra computations compared to CPU.
 
-In JAX, jitting is achieving simply by transforming a function with \texttt{jax.jit} operation:
+In \texttt{JAX}, jitting is achieved simply by transforming a function with \texttt{jax.jit} operation:
 \begin{lstlisting}[language=iPython]
 # Let us redefine our function
 def f(x):
@@ -304,9 +296,9 @@ jitted_f = jax.jit(f)
 
 \textbf{Why is that interesting?} JIT makes it possible to execute entire cosmological \textit{MCMC chains directly on GPUs as compiled code}, with orders of magnitude in speedup over Python code.
 
-\paragraph{Automatic Vectorization} Another extremely powerful feature of JAX is its ability to automatically vectorize or paralellize any function. Through the same tracing mechanism used for automatic differentiation, JAX can decompose a given computation into fundamental operations and add a new \textit{batch} dimension so that the computation can be applied on a batch of inputs as opposed to individual inputs. In doing so, note that the computation will not run sequentially over all entries of the batch, but trully in parallel making full use of the intrinsic parallel architecture of modern GPUs.
+\paragraph{\textbf{Automatic Vectorization}} Another extremely powerful feature of \texttt{JAX} is its ability to automatically vectorize or paralellize any function. Through the same tracing mechanism used for automatic differentiation, \texttt{JAX} can decompose a given computation into fundamental operations and add a new \textit{batch} dimension so that the computation can be applied on a batch of inputs as opposed to individual inputs. In doing so, note that the computation will not run sequentially over all entries of the batch, but trully in parallel making full use of the intrinsic parallel architecture of modern GPUs.
 
-In JAX automatic vectorization is achieved using the \textit{jax.vmap} operation:
+In \texttt{JAX} automatic vectorization is achieved using the \textit{jax.vmap} operation:
 \begin{lstlisting}[language=iPython]
 # Our function f only applies to scalars
 def f(x):
@@ -315,11 +307,11 @@ def f(x):
 batched_f = jax.vmap(f)
 # batched_f now applies to 1D arrays
 \end{lstlisting}
-Again, we stress that in this example, \texttt{batched\_f} will not be implemented in terms of a for loop, but with operations over vectors. The function above is trivial, but the same approach can be used to parallelize any function, from Limber integrals, to an entire likelihood. When considering multi-devices use-case (eg. GPU or TPU), JAX provides \texttt{pmap} which compile and execute in parallel replicates of the same code on each device. Moreover, recent experimental developments deal with parallelization of function over supercomputer-scale hardware meshes. Notice that in the examples detailed in this article, we have only relied on \texttt{vmap} functionality.
+Again, we stress that in this example, \texttt{batched\_f} will not be implemented in terms of a for loop, but with operations over vectors. The function above is trivial, but the same approach can be used to parallelize any function, from Limber integrals, to an entire likelihood. When considering multi-devices use-case (eg. GPU or TPU), \texttt{JAX} provides \texttt{pmap} which compile and execute in parallel replicates of the same code on each device. Moreover, recent experimental developments deal with parallelization of function over supercomputer-scale hardware meshes. Notice that in the examples detailed in this article, we have only relied on \texttt{vmap} functionality.
 
 \textbf{Why is that interesting?} Automatic Vectorization makes it possible to trivially parallelize cosmological likelihood evaluations, to run many parallel MCMC chains on a single GPU.
 
-\paragraph{NumPy API compliance} Finally, the last point to note about JAX, is that it mirrors the NumPy API (with only a few exceptions). This means in practice that existing NumPy code can easily be converted to JAX. This is in contrast to other similar frameworks like TensorFlow, PyTorch, or Julia which all require the user to learn, and adapt their code to, a new API or even a new language. 
+\paragraph{\textbf{NumPy API compliance}} Finally, the last point to note about \texttt{JAX}, is that it mirrors the NumPy API (with only a few exceptions). This means in practice that existing NumPy code can easily be converted to \texttt{JAX}. This is in contrast to other similar frameworks like TensorFlow, PyTorch, or Julia which all require the user to learn, and adapt their code to, a new API or even a new language. 
 
 \textbf{Why is that interesting?} NumPy compliance implies improved maintainability and lower barrier to entry for new contributors.
 
@@ -330,7 +322,7 @@ Again, we stress that in this example, \texttt{batched\_f} will not be implement
 In this section, we describe the cosmological modeling provided by \jaxcosmo, and its implementation in JAX. The general design follows that of the Core Cosmology Library (CCL) \citep{2019ApJS..242....2C}, though, in its initial release,
  \jaxcosmo\ only implements a subset of CCL features and options.
 
-All \jaxcosmo\ data structures are organized as JAX \textit{pyTree} container objects, ensuring that two key JAX features are available to them: \textit{autodiff} and \textit{vmap}. The vmap feature enables any operation defined in JAX (including complicated composite operations) to be applied efficiently as a vector operation. The autodiff feature further makes it possible to take the derivative of any operation, automatically transforming a function that takes $n$ inputs and produces $m$ outputs into a new function that generates an $m \times n$ matrix of partial derivatives.
+All \jaxcosmo\ data structures are organized as \texttt{JAX} \textit{pyTree} container objects, ensuring that two key \texttt{JAX} features are available to them: \textit{autodiff} and \textit{vmap}. The vmap feature enables any operation defined in \texttt{JAX} (including complicated composite operations) to be applied efficiently as a vector operation. The autodiff feature further makes it possible to take the derivative of any operation, automatically transforming a function that takes $n$ inputs and produces $m$ outputs into a new function that generates an $m \times n$ matrix of partial derivatives.
 
 \jaxcosmo\ implements, for example, Runge-Kutta solvers for ODEs, and Simpson \& Romberg integration routines through this framework, so that we can automatically compute the derivative of their solutions with respect to their inputs. This includes the cosmological parameters (the standard set of $w_0 w_a CDM$ cosmological parameters is exposed, using $\sigma_8$ as an amplitude parameter), but also the other input quantities such as redshift distributions described below.
 
@@ -376,7 +368,7 @@ with $R_8 = 8 \mathrm{Mpc}/h$ and $W(x)$ related to the $j_1$ spherical Bessel f
     W(x) = \frac{3j_1(x)}{x}
 \end{equation}
 
-%Future version of the library would offer the possibility to call a JAX emulator of the Cosmic Linear Anisotropy Solving System \citep{2011JCAP...07..034B}. \JZ{How close is this to being usable? If it's just an idea or an early prototype then skip this paragraph.}
+%Future version of the library would offer the possibility to call a \texttt{JAX} emulator of the Cosmic Linear Anisotropy Solving System \citep{2011JCAP...07..034B}. \JZ{How close is this to being usable? If it's just an idea or an early prototype then skip this paragraph.}
 %
 \subsection{Angular power spectra}
 %
@@ -481,7 +473,7 @@ F_{i,j} = - \frac{\partial^2\mathcal{L}(\theta)}{\partial \theta_i \partial \the
 \qquad (\theta_1=\Omega_c, \theta_2=\sigma_8)
 \label{eq:fisher_way1}
 \end{equation}
-which is accomplished in two lines of JAX code:
+which is accomplished in two lines of \texttt{JAX} code:
 \begin{lstlisting}[language=iPython]
 hessian_loglike = jax.jit(jax.hessian(likelihood))
 F = - hessian_loglike(params)
@@ -537,7 +529,7 @@ Fisher forecasts are also commonly used in survey and analysis strategy strategy
 
 \jaxcosmo\ was used in a recent example of such a process, for the  the LSST-DESC 3x2pt tomography optimization challenge \citep{2021OJAp....4E..13Z}, where the best methodology for assignment of galaxies to tomographic bins was assessed using several such figures of merit and related calculations. The \jaxcosmo\ metric proved to be stable and fast.
 
-Because JAX functions are differentiable with respect to all their inputs, including survey configuration parameters (e.g. depth, area, etc), we can even compute the derivative of an FoM with respect to these inputs, allowing for rapid and complete survey optimization.
+Because \texttt{JAX} functions are differentiable with respect to all their inputs, including survey configuration parameters (e.g. depth, area, etc), we can even compute the derivative of an FoM with respect to these inputs, allowing for rapid and complete survey optimization.
 
 \subsection{Massive Optimal Compression in 3 Lines}
 
@@ -834,7 +826,7 @@ Both sampler HMC and NUTS are available in the \numpyro\ library. After the forw
 % \end{lstlisting}
 
 We have run the NUTS sampler using \texttt{numpyro.infer.NUTS} on the DES Y1 likelihood,  with 16 chains of 1,000 samples each after a warm-up phase consisting of 200 samples, with the \texttt{max\_tree\_depth} set to seven (ie. 128 steps for each iteration). %\FrL{it should explain that vectorized means 16 chains in parallel on a single GPU.}
-Using the ``vectorized'' \texttt{numpyro} option we ran all 16 chains simultaneously on a single GPU, made possible by the JAX \textit{vmap} mechanism. If one has several GPU devices available, then the using the JAX paralellization mechanism (\textit{pmap}), it is further possible to launch the vectorized sampling across the devices, and get back all the MCMC chains. However, the experiments have all been undertaken on a single GPU, either a NVidia Titan Xp (12GB RAM) on a desktop or an NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapsed time for these experiments was 20 hours.
+Using the ``vectorized'' \texttt{numpyro} option we ran all 16 chains simultaneously on a single GPU, made possible by the \texttt{JAX} \textit{vmap} mechanism. If one has several GPU devices available, then the using the \texttt{JAX} paralellization mechanism (\textit{pmap}), it is further possible to launch the vectorized sampling across the devices, and get back all the MCMC chains. However, the experiments have all been undertaken on a single GPU, either a NVidia Titan Xp (12GB RAM) on a desktop or an NVidia V100 (32GB RAM) at the IN2P3 Computing Centre\footnote{\url{https://cc.in2p3.fr/en/}}. The elapsed time for these experiments was 20 hours.
 
 The results in terms of relative effective sample sizes (ESS) are detailed in Table~\ref{tab-ESS-NUTS_SVI-1} while the confidential level (CL) contours are presented in Figure \ref{fig_cobaya_NUTS_SVI}. We compare to a reference sample from the highly-optimized \texttt{Cobaya} Metropolis-Hastings implementation \citep{2019ascl.soft10019T,2021JCAP...05..057T}, which is widely used in cosmology and which we ran for around 40 hours on CPU to obtain the set of contours shown.
 
@@ -1015,7 +1007,7 @@ The first essential barrier to a fully-fledged automatically differentiable cosm
 
 A first option to resolve this issue would be to implement from scratch a new Boltzmann code in a framework that supports automatic differentiation. This is the approach behind works such as \texttt{Bolt.jl}\footnote{\url{https://github.com/xzackli/Bolt.jl}} which is provides a simplified Boltzmann solver in Julia, or PyCosmo \citep{pycosmo} which is based on a the SymPy symbolic mathematics library and could be relatively easily compatible with JAX. However, even if very promising, both of these options thus far remain limited. While we do believe a automatically differentiable Boltzmann code is the best option, it seems that the cost of developing such a code remains very high at this time.
 
-A second approach would be to develop emulators of a fully-fledged Boltzmann code. Emulators based on neural networks or Gaussian processes are themselves automatically differentiable with respect to cosmological parameters. In fact, the literature is now rich in examples of such emulators \citep[e.g.][and references therein]{Gunther_2022, nygaard,cosmopower,cosmicnet, emucmb}. After validating their accuracy against a reference CAMB or CLASS implementation, they could be directly integrated as a plug-and-play replacement for the computation of the matter power spectrum. At this time, it seems that using emulators will be the most straightforward approach to bring more accurate models to \jaxcosmo. We believe, though,  that one of the reason for the wide diversity in this is a lack of standardization - a unified interface and validation suite for such methods would provide a much simpler comparison between them and enable wider usage. \JZ{Francois - is this what you meant here? If not please edit. If Francois hasn't done this soon then just delete this comment.}
+A second approach would be to develop emulators of a fully-fledged Boltzmann code. Emulators based on neural networks or Gaussian processes are themselves automatically differentiable with respect to cosmological parameters. In fact, the literature is now rich in examples of such emulators \citep[e.g.][and references therein]{Gunther_2022, nygaard,cosmopower,cosmicnet, emucmb}. After validating their accuracy against a reference CAMB or CLASS implementation, they could be directly integrated as a plug-and-play replacement for the computation of the matter power spectrum. At this time, it seems that using emulators will be the most straightforward approach to bring more accurate models to \jaxcosmo. We believe, though,  that one of the reason for the wide diversity in this is a lack of standardization - a unified interface and validation suite for such methods would provide a much simpler comparison between them and enable wider usage.
 
 \bigskip
 
@@ -1035,7 +1027,7 @@ Another aspect worth discussing are the prospects for scaling up and speeding up
 \bigskip
 
 %  - Respective role of CCL and jax-cosmo
-Finally, one question worth asking is how does \jaxcosmo\ position itself against classical codes such as CCL?  While we are convinced of the benefits of a JAX implementation, we expect CCL and other key codes to remain critical as standard cosmology implementations.  Ultimately, a natural transition may occur towards differentiable frameworks like \jaxcosmo\ when they reach the ability to run full-fledged Stage IV likelihoods.
+Finally, one question worth asking is how does \jaxcosmo\ position itself against classical codes such as CCL?  While we are convinced of the benefits of a \texttt{JAX} implementation, we expect CCL and other key codes to remain critical as standard cosmology implementations.  Ultimately, a natural transition may occur towards differentiable frameworks like \jaxcosmo\ when they reach the ability to run full-fledged Stage IV likelihoods.
 
 
 \section{Conclusions \& Prospects}
@@ -1046,7 +1038,7 @@ Finally, one question worth asking is how does \jaxcosmo\ position itself agains
 %- We have demonstrated the efficiency in JC of the derivative-aware MCMC methods HMC and NUTS, which are regarded as the only way for samplers to evade the curse of dimensionality up to the hundreds of dimensions we are likely to need for the next generation of surveys.
 %- We have shown a proof-of-concept for the use of JC with machine learning methods, opening a whole new space of methods in cosmology.
 
-In this paper, we have presented \jaxcosmo, a cosmology library implemented in the JAX framework that enables the automatic computation of the derivatives of cosmological likelihoods with respect to their parameters, and greatly speeds up likelihood evaluations thanks to automatic parallelisation and just-in-time compilation on GPUs. Currently, \jaxcosmo\ only contains a small set of features corresponding to a DES-Y1 3x2pt analysis. Being an open source project, contributions of additional features is additional areas such as CMB or spectroscopic galaxy clustering are warmly welcome. 
+In this paper, we have presented \jaxcosmo, a cosmology library implemented in the \texttt{JAX} framework that enables the automatic computation of the derivatives of cosmological likelihoods with respect to their parameters, and greatly speeds up likelihood evaluations thanks to automatic parallelisation and just-in-time compilation on GPUs. Currently, \jaxcosmo\ only contains a small set of features corresponding to a DES-Y1 3x2pt analysis. Being an open source project, contributions of additional features is additional areas such as CMB or spectroscopic galaxy clustering are warmly welcome. 
 
 To demonstrate the value of an automatically differentiable library, we have illustrated with concrete examples how Fisher matrices, which are notoriously unstable and require extensive and careful fine tuning, can now be computed robustly and at much lower cost. In addition, Fisher matrices becomes themselves differentiable, which allows for  Figure of Merit optimization by gradient descent, making survey optimization extremely simple. 
 
@@ -1085,7 +1077,7 @@ Some of the numerical experiments have been conducted at the IN2P3 Computing Cen
 %\label{eq-loss-svi-3b}
 %\end{multline}
 
-%In case of the MVN  $\nabla_\mu \mathbb{H}(q)=0$, $\nabla_L \mathbb{H}(q)=(L^{-1})^T$ while the other gradients are computed by the JAX \texttt{autodiff} mechanism.
+%In case of the MVN  $\nabla_\mu \mathbb{H}(q)=0$, $\nabla_L \mathbb{H}(q)=(L^{-1})^T$ while the other gradients are computed by the \texttt{JAX} \texttt{autodiff} mechanism.
 %\FrL{Yeah. this is way TMI, and also goes against the idea that with autodiff we don't need to manually work out all these details.} 
 
 %The expectations used in the above expressions are computed with $\zeta$ i.i.d samples from $\mathcal{N}(0,1)$ distribution, hence the ``S'' of SVI. As one can imagine all the jacobian computations take benefit of the automatic differentiation offers by JAX.
