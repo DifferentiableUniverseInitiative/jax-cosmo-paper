@@ -11,7 +11,6 @@ Here is the current main scope and aims of the project:
  examples on a standard setting (e.g. DES Y1). Here are a few possibilities:
    - Forecast demo
    - Linear data compression demo a la MOPED
-   - Survey optimization
    - Fast inference with VI or HMC
 
 But we will generally leave actual science investigations out of this paper, these
