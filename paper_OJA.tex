@@ -150,6 +150,7 @@
 \newcommand{\FrL}[1]{{\color{cyan}FL: #1}}
 \newcommand{\JZ}[1]{{\color{purple}JZ: #1}}
 \newcommand{\JEC}[1]{{\color{magenta}JEC: #1}}
+\newcommand{\resubnote}[1]{{\color{red}#1}}
 
 
 %%%% new command (JEC)
@@ -215,7 +216,7 @@ In its initial release, \jaxcosmo\ implements background evolution, linear and n
 %
 We illustrate how automatic differentiation can be a game-changer for common tasks involving Fisher matrix computations, or full posterior inference with gradient-based techniques (e.g. Hamiltonian Monte Carlo). In particular, we show how Fisher matrices are now fast, exact, no longer require any fine tuning, and are themselves differentiable with respect to parameters of the likelihood, enabling complex survey optimization by simple gradient descent. Finally, using a Dark Energy Survey Year 1 3x2pt analysis as a benchmark, we demonstrate how \jaxcosmo\ can be combined with Probabilistic Programming Languages such as \numpyro\ to perform posterior inference with state-of-the-art algorithms including a No U-Turn Sampler (NUTS), Automatic Differentiation Variational Inference (ADVI), and Neural Transport HMC (NeuTra). 
 % We discuss algorithms made possible by this library, present comparisons with the Core Cosmology Library as a benchmark, and run a series of tests using the Dark Energy Survey Year 1 3x2pt analysis with the \numpyro\ library to demonstrate practical inference. 
-We show that thee effective sample size per node (1 GPU or 32 CPUs) per hour of wall time is about 5 times better for a JAX NUTS sampler compared to the well optimized Cobaya Metropolis-Hasting sampler. We further demonstrate that Normalizing Flows using Neural Transport are a promising methodology for model validation in the early stages of analysis.   %
+We show that the effective sample size per node (1 GPU or 32 CPUs) per hour of wall time is about 5 times better for a JAX NUTS sampler compared to the well optimized Cobaya Metropolis-Hasting sampler. We further demonstrate that Normalizing Flows using Neural Transport are a promising methodology for model validation in the early stages of analysis.   %
 \github
 
 % The recent \jax\ library has created a new ecosystem from which probabilistic programming software can take enormous benefit: batch acceleration, just-in-time compilation, and automatic optimization of code for different hardware modalities (CPU, GPU, TPU) can provide huge speed-ups to a wide range of different problems. In particular, \jax\ exposes an \textit{automatic differentiation} mechanism, which can take a python function that uses \jax\ and return its (vector) derivative.  This gives us the opportunity to apply a range of powerful but otherwise unfeasible algorithms used in Bayesian inference, such as Hamiltonian Monte Carlo (HMC) and Variational Inference. 
@@ -283,7 +284,7 @@ The aim of this section is to provide a brief technical primer on \jax, necessar
 % Maybe a short history explaining what autograd and XLA are.
 %\FrL{Add a short history of XLA and Autograd.} Or maybe not
 
-\paragraph{\textbf{Automatic Differentiation}} Traditionally, two different approaches have been used in cosmology to obtain derivatives of given numerical expressions. The first approach is to derive analytically the formula for the derivatives of interest \citep[e.g.][]{2013MNRAS.432..894J}, with or without the help of tools such as \texttt{Mathematica}\footnote{\url{https://www.wolfram.com/mathematica}.}. This is typically only practical, however, for simple analytical models.
+\paragraph{\textbf{Automatic Differentiation}} Traditionally, two different approaches have been used in cosmology to obtain derivatives of given numerical expressions. The first approach is to derive analytically the formula for the derivatives of interest \citep[e.g.][]{2013MNRAS.432..894J, kostic}, with or without the help of tools such as \texttt{Mathematica}\footnote{\url{https://www.wolfram.com/mathematica}.}. This is typically only practical, however, for simple analytical models.
 The second approach is to compute numerical derivatives by finite differences. This approach can be applied on black-box models of arbitrary complexity (from typical Boltzmann codes to cosmological simulations; \citealp{2020ApJS..250....2V}). However it is notoriously difficult to obtain stable derivatives by finite differences \citep[e.g.][]{2021arXiv210100298B, 2021A&A...649A..52Y}. In addition, their computational cost does not scale well with the number of parameters (a minimum of $(2N+1)$ model evaluations is typically required for $N$ parameters), making them impractical whenever derivatives are needed as part of an outer iterative algorithm.
 
 Automatic differentiation frameworks like \jax\ take a different approach. They trace the execution of a given model and decompose this trace into primitive operations with known derivatives (e.g. multiplication). Then, by applying the chain rule formula, the computational graph for the derivatives (of any order) of the model can be built from the known derivatives of every elementary operation. A new function corresponding to the derivative of the original function is therefore built automatically for the user. We direct the interested reader to \citet{baydin2018automatic} and \citet{Margossian2019} for in-depth introductions to automatic differentiation. 
@@ -367,12 +368,13 @@ Notably, the relativistic contributions of massless neutrinos and photon radiati
      \chi(a) =  R_H \int_a^1 \frac{\mathrm{d}a^\prime}{{a^\prime}^2 E(a^\prime)}
      \label{eq:radial_comoving}
 \end{equation}
-with $R_H$ the Hubble radius. 
+with $R_H$ the Hubble radius.  \resubnote{$\chi(a)$ evaluation is performed with a linear interpolation of pre-computed values obtained over a logarithmic grid of 256 knots regularly spaced in the range [-3,0] using a Runge-Kutta 4th order solver.}
+
+
 %Using the scale factor ($a$) redshift ($z$) relationship, $\chi$ can be viewed as a function of $z$. 
 %
 \subsubsection{Growth of perturbations}
-%
-Currently, \jaxcosmo\  implements the \citet{Eisenstein_1998} transfer function $T$ which transforms the primordial matter power spectrum to its late-time non-linear value:
+\resubnote{Accurate calculations of the growth of cosmic structure perturbations require solving the Boltzmann equation describing interactions between different density species. This is a complicated process to achieve at high accuracy, and is implemented in dedicated codes such as CAMB \citep{camb} or CLASS \citep{2011JCAP...07..034B}. At this stage we have not attempted to implement a Boltzmann solver in JAX, but instead use the analytic approximation presented in \citet{Eisenstein_1998}. This defines a transfer function $T$} which relates the primordial matter power spectrum to its late-time non-linear value:
 \begin{equation}
     P(k, z) = P(k, z=\infty) \cdot T^2(k, z; \Omega_m, \Omega_b, ...),
 \end{equation}
@@ -395,14 +397,17 @@ with $R_8 = 8 \mathrm{Mpc}/h$ and $W(x)$ related to the $j_1$ spherical Bessel f
 %Future version of the library would offer the possibility to call a \jax\ emulator of the Cosmic Linear Anisotropy Solving System \citep{2011JCAP...07..034B}. \JZ{How close is this to being usable? If it's just an idea or an early prototype then skip this paragraph.}
 %
 \subsubsection{Angular power spectra}
+
+\resubnote{The bias and number density functions that enter the kernel terms have been modelled in many different ways to try to capture possible behavior of these key systematic errors. Exposing them in JAX-Cosmo allows us easily to deal with highly complicated models for either of them, opening up many useful avenues of exploration, as shown in \citet{ruiz-zapatero}}.
+
 %
 \jaxcosmo\ is currently focused on predicting projected 2D Fourier-space 2pt galaxy lensing, clustering, and cross correlations, the $C_\ell$ angular power spectra that are a primary target of upcoming photometric surveys. The details of the implementation is in \texttt{jc.angular\_cl} which deals with the mean and Gaussian covariance matrix computations.
 
 The angular power spectra $C_\ell^{ij}$ for the probes $(i,j)$ and for redshift bin window selections are computed in the first order Limber approximation \citep{PhysRevD.78.123506}:
 \begin{align}
-    C_\ell^{i,j} \approx \left(\ell+\frac{1}{2}\right)^{m_i+m_j}\int\frac{\mathrm{d}\chi}{c^2\chi^2}K_i(\chi)K_j(\chi)\,P\left(k=\frac{\ell+1/2}{\chi},z\right),\label{eq:Cell_limber}
+    C_\ell^{i,j} \approx \left(\ell+\frac{1}{2}\right)^{m_i+m_j}\int\frac{\mathrm{d}a}{c^2\chi^2}\frac{\mathrm{d}\chi}{\mathrm{d}a}K_i(\chi)K_j(\chi)\,P\left(k=\frac{\ell+1/2}{\chi},z\right),\label{eq:Cell_limber}
 \end{align}
-The $m_i$ factors are $(0,-2)$ for the galaxy clustering and weak lensing, respectively, and each $K(z)$ function represents a single tomographic redshift bin's number density. These tracers are implemented as two kernel functions:
+The $m_i$ factors are $(0,-2)$ for the galaxy clustering and weak lensing, respectively, and each $K(z)$ function represents a single tomographic redshift bin's number density \resubnote{in $z=(1/a)-1$. The integration lower bound $a_{ij}$ is defined from the maximum redshift involved  and  Simpson's rule is used  with a regular grid of 512 knots. The $K(z)$} tracers are implemented as two kernel functions:
 
 \begin{description}
 \item[\texttt{NumberCounts}]
@@ -420,7 +425,7 @@ where $K_{IA}(z)$ is an optional kernel function to deal with the Intrinsic Alig
 \begin{equation}
     K_{IA}(z) = \left(\frac{(\ell+2)!}{(\ell-2)!}\right)^{1/2}\ p_i(z)\ b(z)\  H(z)\ \frac{C\  \Omega_m}{D(z)}
 \end{equation}
-with $C\approx 0.0134$ being a dimensionless constant and $D(z)$ the growth factor of linear perturbations.
+with $C\approx 0.0134$ being a dimensionless constant and $D(z)$ the growth factor of linear perturbations. \resubnote{The integration is performed using Simpson's rule with an upper bound given by the maximum redshift involved.}
 \end{description}
 
 % Notice that all described kernel functions can be also viewed as function of the scale factor $a$ or as function of the radial comoving distance $\chi$. 
@@ -436,6 +441,9 @@ To illustrate the different features available with the present version of the l
 show the radial comoving distance (Eq.~\ref{eq:radial_comoving}), the non-linear matter power spectrum computation, and the angular power spectrum for galaxy-galaxy lensing (Eq.~\ref{eq:Cell_limber}) using the \texttt{NumberCounts} and \texttt{WeakLensing} kernel functions. \jaxcosmo\ features a suite of validation tests against CCL, automatically validating the precision of all computations to within the desired numerical accuracy; the relative differences between the two libraries are at the level of few $10^{-3}$ or better.
 
 These numerical differences are mostly due to different choices of integration methods and accuracy parameters (e.g. number of quadrature points). Increasing these parameters leads to performance degradation for \jaxcosmo\, but increases the XLA compilation memory requirements significantly, especially for the angular power spectra computation. Since these differences are likely to be within the tolerance of the current generation of cosmological surveys, this trade-off is an acceptable one.
+
+\resubnote{Despite this high precision with respect to the CCL library, the current \jaxcosmo\ implementation will have to be reviewed to tackle Stage IV accuracy requirements. For instance the non-limber $C_\ell$  computation \cite{angpow, n5k} would be a limitation needing revision in a future release.} 
+
 
 \begin{figure}
     \centering
@@ -867,7 +875,7 @@ The speed of the sampling could be further improved: we have tested using the pa
 \begin{figure*}
 \centering
 \includegraphics[width=1.5\columnwidth]{figures/fig_Cobaya-NUTS-SVI200_v1.pdf}
-\caption{Constraints (30\%, 68\%, 90\%) on 4 of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using the \texttt{Cobaya} Metropolis-Hastings sampler (full curve in blue, 70,000 samples), the  NUTS sampling described in section \ref{sec-NUTS} (dashed curve in red; 16,000 samples), and a SVI MVN optimisation followed by a Neural Transport parametrisation to run a NUTS sampling (dashed-dotted curve in green, 200 samples).}
+\caption{Constraints (30\%, 68\%, 90\%) on 4 of the 21 parameters of a simulated DES-Y1 3x2pt likelihood, using the \texttt{Cobaya} Metropolis-Hastings sampler (full curve in blue, \resubnote{140,000} samples), the  NUTS sampling described in section \ref{sec-NUTS} (dashed curve in red; 16,000 samples), and a SVI MVN optimisation followed by a Neural Transport parametrisation to run a NUTS sampling (dashed-dotted curve in green, 200 samples).}
 \label{fig_cobaya_NUTS_SVI}
 \end{figure*}
 
@@ -946,7 +954,7 @@ An implementation example using the \numpyro\ library may be found in this compa
 % samples = guide.sample_posterior(jax.random.PRNGKey(1), svi_result.params, sample_shape=(100_000,))
 % \end{lstlisting}
 %
-Once the optimisation is done one can obtain  i.i.d. $z$ samples from the $q(z,\lambda^\ast)$ distribution  applying the inverse of the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a Multivariate Normal distribution (MVN) and a Block Neural Autoregressive Flow (B-NAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The B-NAF architecture is composed of a single flow using a block autoregressive structure with 2 hidden layers of 8 units each. The SVI optimization has been performed with the Adam optimizer \citep{KingmaB14} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 (30,000) steps to ensure a stable ELBO loss convergence when using the B-NAF (MVN) guides, and no tuning of the optimizer learning rate scheduling or other parameters was performed. This takes about 2 or 3 hours on the NVidia V100 GPU scaling, depending on the number of steps.  
+Once the optimisation is done one can obtain  i.i.d. $z$ samples from the $q(z,\lambda^\ast)$ distribution applying the inverse of the $S_{\lambda^\ast}$ and $T$ transformations. Using the same DES-Y1 simulation as in previous section, we use both a Multivariate Normal distribution (MVN) and a Block Neural Autoregressive Flow (B-NAF) \citep{pmlr-v115-de-cao20a} as \textit{guides} to approximate the true posterior (\textit{model}). The B-NAF architecture is composed of a single flow using a block autoregressive structure with 2 hidden layers of 8 units each. The SVI optimization has been performed with the Adam optimizer \citep{KingmaB14} and a learning rate set to $10^{-3}$. We have stopped the optimization after 20,000 (30,000) steps to ensure a stable ELBO loss convergence when using the B-NAF (MVN) guides, and no tuning of the optimizer learning rate scheduling or other parameters was performed. This takes about 2 or 3 hours on the NVidia V100 GPU scaling, depending on the number of steps.  
 
 In figure \ref{fig_cobaya_SVIs}, we compare the contours obtained with \texttt{Cobaya} (as in figure \ref{fig_cobaya_NUTS_SVI}) and those obtained with the MVN and B-NAF guided SVI.  As noted in \cite{NEURIPS2020_7cac11e2} one challenge with variational inference is assessing how close the variational approximation $q(z,\lambda^\ast)$ is to the true posterior distribution. It is not in the scope of this article to elaborate a statistical diagnosis; rather we show that both guided SVI exhibit rather similar contours and both estimate are close to the Cobaya posterior sampling. The difference is that these SVI approximate posteriors have been obtained in a much shorter time, and can serve as starting point for a NUTS sampler as described in the next section. 
 %
@@ -992,7 +1000,7 @@ Results in terms of sampling efficiency are shown in Table~\ref{tab-ESS-NUTS_SVI
 %{\color{red} 
 %(0) "F.L run" are computed from NUTS sampler with 16 %parallel chains of 1,000 samples each and 200 warm-up %and \texttt{max\_tree\_depth=7} (see text) The numbers %are from \texttt{n\_eff/16,000};
 %}
-(a): Cobaya 70,000 samples;
+(a): Cobaya \resubnote{140,000} samples;
 (b): NUTS sampler with 16 chains of 1,000 samples each and 200 warm-up and \texttt{max\_tree\_depth=7} (Section~\ref{sec-NUTS}); 
 (c) SVI Multivariate Normal followed by NUTS and Neural Transform  with one chain of 200 samples and 200 warm-up. The ESS can be larger than 100\% in some cases.  (Section~\ref{sec-Neural-Reparametrisation}).}
 \label{tab-ESS-NUTS_SVI-1}
@@ -1021,18 +1029,19 @@ with $N_s$ the total number of samples, $\varepsilon$ the effective sampler effi
 As the dimensionality of cosmological models increases, methods like HMC/NUTS that by construction are more efficient will become increasingly important. Moreover, using SVI with neural reparametrisation offers an effective way to undertake a progressive validation of a model with rather modest sample set (e.g. starting with 200 samples) producing good enough marginal contours in few hours. In practice, this validation phase can save time before producing sizeable batch for final analysis. The authors have not investigated higher dimensional ($O(10^2)$ parameters) or multi-modal problems, but the key argument in favour of HMC/NUTS sampling is that it exploits the geometry of the typical set of the posterior distribution automatically, unlike the standard random walk of Metropolis-Hasting sampling. Furthermore, using reparametrisation  one can adapt to poor geometry cases (e.g. \citealp{2019arXiv190303704H}).
 %
 
-%
 \section{General discussion}
 \label{sec-discussion}
 %
-Having demonstrated the utility of \jaxcosmo\ as a differentiable cosmology library, we now discuss several limitations, and raise a few questions.
+\resubnote{We have demonstrated that the derivatives made available in JAX-Cosmo can be applied in a range of different methodologies to accelerate and improve the stability of cosmological parameter estimation. We expect these improvements to be increasingly important over the coming years, as higher statistical precision pushes us towards more complicated models. Even though the standard cosmological model has now remained static for several decades, models for systematics such as redshift distribution uncertainty and galaxy bias are becoming more and more complex. Using derivative-based methods to constrain them can ensure that we propagate their uncertainties in full.}
+
+\resubnote{With these successes in mind, we now turn to important limitations of \jaxcosmo, and to questions about its place in the cosmology software ecosystem.}
 
 %Lack of autodiff Boltzmann code (emulator)
 The first essential barrier to a fully-fledged automatically differentiable cosmology library is the need for a differentiable Boltzmann solver to compute the CMB or matter power spectra. At this stage, \jaxcosmo\ relies on the analytic Eisenstein \& Hu fitting formula for the latter, which is not accurate enough for Stage IV \citep{detf} requirements, and it does not include models beyond $\Lambda$CDM. Existing solvers such as CLASS \citep{2011JCAP...07..034B} or CAMB \citep{camb} are large and complex codes which are not easily reimplemented in an \autodiff\ framework and therefore cannot be directly integrated in \jaxcosmo\ .
 
 A first option to resolve this issue would be to implement from scratch a new Boltzmann code in a framework that supports automatic differentiation. This is the approach behind works such as \texttt{Bolt.jl}\footnote{\url{https://github.com/xzackli/Bolt.jl}} which provides a simplified Boltzmann solver in Julia, or PyCosmo \citep{pycosmo} which is based on the SymPy symbolic mathematics library and could be relatively compatible with \jax. However, even if very promising, both of these options thus far remain limited. While we do believe an automatically differentiable Boltzmann code is the best option, it seems that the cost of developing such a code remains very high at this time.
 
-A second approach would be to develop emulators of a fully-fledged Boltzmann code. Emulators based on neural networks or Gaussian processes are themselves automatically differentiable with respect to cosmological parameters. In fact, the literature is now rich in examples of such emulators \citep[e.g.][and references therein]{Gunther_2022, nygaard,cosmopower,cosmicnet, emucmb}. After validating their accuracy against a reference CAMB or CLASS implementation, they could be directly integrated as a plug-and-play replacement for the computation of the matter power spectrum. At this time, it seems that using emulators will be the most straightforward approach to bring more accurate models to \jaxcosmo. We believe, though,  that one of the reason for the wide diversity in this is a lack of standardization - a unified interface and validation suite for such methods would provide a much simpler comparison between them and enable wider usage.
+A second approach would be to develop emulators of a fully-fledged Boltzmann code. Emulators based on neural networks or Gaussian processes are themselves automatically differentiable with respect to cosmological parameters. In fact, the literature is now rich in examples of such emulators \citep[e.g.][and references therein]{Gunther_2022, nygaard,cosmopower,cosmicnet, emucmb, bacco1, bacco2}. After validating their accuracy against a reference CAMB or CLASS implementation, they could be directly integrated as a plug-and-play replacement for the computation of the matter power spectrum. At this time, it seems that using emulators will be the most straightforward approach to bring more accurate models to \jaxcosmo. We believe, though,  that one of the reason for the wide diversity in this is a lack of standardization - a unified interface and validation suite for such methods would provide a much simpler comparison between them and enable wider usage.
 
 \bigskip
 
