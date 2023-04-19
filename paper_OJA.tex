@@ -405,7 +405,7 @@ with $R_8 = 8 \mathrm{Mpc}/h$ and $W(x)$ related to the $j_1$ spherical Bessel f
 
 The angular power spectra $C_\ell^{ij}$ for the probes $(i,j)$ and for redshift bin window selections are computed in the first order Limber approximation \citep{PhysRevD.78.123506}:
 \begin{align}
-    C_\ell^{i,j} \approx \left(\ell+\frac{1}{2}\right)^{m_i+m_j}\int\frac{\mathrm{d}a}{c^2\chi^2}\frac{\mathrm{d}\chi}{\mathrm{d}a}K_i(\chi)K_j(\chi)\,P\left(k=\frac{\ell+1/2}{\chi},z\right),\label{eq:Cell_limber}
+    C_\ell^{i,j} \approx \left(\ell+\frac{1}{2}\right)^{m_i+m_j}\int_{a_{i,j}}^1\frac{\mathrm{d}a}{c^2\chi^2}\frac{\mathrm{d}\chi}{\mathrm{d}a}K_i(\chi)K_j(\chi)\,P\left(k=\frac{\ell+1/2}{\chi},z\right),\label{eq:Cell_limber}
 \end{align}
 The $m_i$ factors are $(0,-2)$ for the galaxy clustering and weak lensing, respectively, and each $K(z)$ function represents a single tomographic redshift bin's number density \resubnote{in $z=(1/a)-1$. The integration lower bound $a_{ij}$ is defined from the maximum redshift involved  and  Simpson's rule is used  with a regular grid of 512 knots. The $K(z)$} tracers are implemented as two kernel functions:
 
@@ -442,7 +442,7 @@ show the radial comoving distance (Eq.~\ref{eq:radial_comoving}), the non-linear
 
 These numerical differences are mostly due to different choices of integration methods and accuracy parameters (e.g. number of quadrature points). Increasing these parameters leads to performance degradation for \jaxcosmo\, but increases the XLA compilation memory requirements significantly, especially for the angular power spectra computation. Since these differences are likely to be within the tolerance of the current generation of cosmological surveys, this trade-off is an acceptable one.
 
-\resubnote{Despite this high precision with respect to the CCL library, the current \jaxcosmo\ implementation will have to be reviewed to tackle Stage IV accuracy requirements. For instance the non-limber $C_\ell$  computation \cite{angpow, n5k} would be a limitation needing revision in a future release.} 
+\resubnote{Despite this high precision with respect to the CCL library, the current \jaxcosmo\ implementation will have to be reviewed to tackle Stage IV accuracy requirements. For instance the non-limber $C_\ell$  computation \citep{n5k, angpow} would be a limitation needing revision in a future release.} 
 
 
 \begin{figure}
@@ -1041,7 +1041,7 @@ The first essential barrier to a fully-fledged automatically differentiable cosm
 
 A first option to resolve this issue would be to implement from scratch a new Boltzmann code in a framework that supports automatic differentiation. This is the approach behind works such as \texttt{Bolt.jl}\footnote{\url{https://github.com/xzackli/Bolt.jl}} which provides a simplified Boltzmann solver in Julia, or PyCosmo \citep{pycosmo} which is based on the SymPy symbolic mathematics library and could be relatively compatible with \jax. However, even if very promising, both of these options thus far remain limited. While we do believe an automatically differentiable Boltzmann code is the best option, it seems that the cost of developing such a code remains very high at this time.
 
-A second approach would be to develop emulators of a fully-fledged Boltzmann code. Emulators based on neural networks or Gaussian processes are themselves automatically differentiable with respect to cosmological parameters. In fact, the literature is now rich in examples of such emulators \citep[e.g.][and references therein]{Gunther_2022, nygaard,cosmopower,cosmicnet, emucmb, bacco1, bacco2}. After validating their accuracy against a reference CAMB or CLASS implementation, they could be directly integrated as a plug-and-play replacement for the computation of the matter power spectrum. At this time, it seems that using emulators will be the most straightforward approach to bring more accurate models to \jaxcosmo. We believe, though,  that one of the reason for the wide diversity in this is a lack of standardization - a unified interface and validation suite for such methods would provide a much simpler comparison between them and enable wider usage.
+A second approach would be to develop emulators of a fully-fledged Boltzmann code. Emulators based on neural networks or Gaussian processes are themselves automatically differentiable with respect to cosmological parameters. In fact, the literature is now rich in examples of such emulators \citep[e.g.][and references therein]{bacco1, bacco2, Gunther_2022, nygaard,cosmopower,cosmicnet, emucmb}. After validating their accuracy against a reference CAMB or CLASS implementation, they could be directly integrated as a plug-and-play replacement for the computation of the matter power spectrum. At this time, it seems that using emulators will be the most straightforward approach to bring more accurate models to \jaxcosmo. We believe, though,  that one of the reason for the wide diversity in this is a lack of standardization - a unified interface and validation suite for such methods would provide a much simpler comparison between them and enable wider usage.
 
 \bigskip
 
